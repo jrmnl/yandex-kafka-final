@@ -1,0 +1,251 @@
+[
+  {
+    "product_id": "20001",
+    "name": "Умные часы PulseOne",
+    "description": "Многофункциональные умные часы с датчиками здоровья.",
+    "price": { "amount": 7990.00, "currency": "RUB" },
+    "category": "Гаджеты",
+    "brand": "OmegaTech",
+    "stock": { "available": 120, "reserved": 10 },
+    "sku": "SKU-20001",
+    "tags": ["гаджеты", "часы", "фитнес"],
+    "images": [
+      { "url": "https://example.com/img/pulseone1.jpg", "alt": "PulseOne фронт" }
+    ],
+    "specifications": {
+      "display": "AMOLED 1.6''",
+      "battery_life": "48 hours",
+      "water_resistance": "IP68",
+      "connectivity": "Bluetooth 5.2, GPS"
+    },
+    "created_at": "2024-01-01T10:00:00Z",
+    "updated_at": "2024-01-05T10:00:00Z",
+    "index": "products",
+    "store_id": "store_001"
+  },
+
+  {
+    "product_id": "20002",
+    "name": "Наушники AirBeat Pro",
+    "description": "Беспроводные наушники с шумоподавлением и высоким качеством звука.",
+    "price": { "amount": 12990.00, "currency": "RUB" },
+    "category": "Электроника",
+    "brand": "Nova",
+    "stock": { "available": 75, "reserved": 5 },
+    "sku": "SKU-20002",
+    "tags": ["аудио", "шумоподавление", "новинки"],
+    "images": [
+      { "url": "https://example.com/img/airbeatpro.jpg", "alt": "AirBeat Pro" }
+    ],
+    "specifications": {
+      "type": "TWS",
+      "battery_life": "6 hours + 24 hours кейс",
+      "noise_cancellation": "ANC",
+      "connectivity": "Bluetooth 5.3"
+    },
+    "created_at": "2024-01-02T10:00:00Z",
+    "updated_at": "2024-01-06T10:00:00Z",
+    "index": "products",
+    "store_id": "store_002"
+  },
+
+  {
+    "product_id": "20003",
+    "name": "Робот-пылесос CleanMaster X5",
+    "description": "Робот-пылесос с лазерной навигацией и влажной уборкой.",
+    "price": { "amount": 22990.00, "currency": "RUB" },
+    "category": "Бытовая техника",
+    "brand": "Luxor",
+    "stock": { "available": 40, "reserved": 4 },
+    "sku": "SKU-20003",
+    "tags": ["умный дом", "уборка", "техника"],
+    "images": [
+      { "url": "https://example.com/img/x5.jpg", "alt": "CleanMaster X5" }
+    ],
+    "specifications": {
+      "suction_power": "2500 Pa",
+      "battery_capacity": "5200 mAh",
+      "navigation": "LiDAR",
+      "functions": "сухая уборка,влажная уборка"
+    },
+    "created_at": "2024-01-03T10:00:00Z",
+    "updated_at": "2024-01-07T10:00:00Z",
+    "index": "products",
+    "store_id": "store_003"
+  },
+
+  {
+    "product_id": "20004",
+    "name": "4K Телевизор VisionPro 55",
+    "description": "55-дюймовый телевизор с поддержкой HDR10+ и Smart TV.",
+    "price": { "amount": 45990.00, "currency": "RUB" },
+    "category": "Электроника",
+    "brand": "Astra",
+    "stock": { "available": 22, "reserved": 2 },
+    "sku": "SKU-20004",
+    "tags": ["телевизор", "4k", "смарт тв"],
+    "images": [
+      { "url": "https://example.com/img/vp55.jpg", "alt": "VisionPro 55" }
+    ],
+    "specifications": {
+      "screen_size": "55''",
+      "resolution": "3840x2160",
+      "hdr": "HDR10+",
+      "smart_tv": "Android TV"
+    },
+    "created_at": "2024-01-04T10:00:00Z",
+    "updated_at": "2024-01-08T10:00:00Z",
+    "index": "products",
+    "store_id": "store_001"
+  },
+
+  {
+    "product_id": "20005",
+    "name": "Электросамокат Glide S300",
+    "description": "Лёгкий городской электросамокат с запасом хода 30 км.",
+    "price": { "amount": 28990.00, "currency": "RUB" },
+    "category": "Гаджеты",
+    "brand": "XYZ",
+    "stock": { "available": 18, "reserved": 1 },
+    "sku": "SKU-20005",
+    "tags": ["транспорт", "электросамокат", "город"],
+    "images": [
+      { "url": "https://example.com/img/s300.jpg", "alt": "Glide S300" }
+    ],
+    "specifications": {
+      "max_speed": "25 km/h",
+      "range": "30 km",
+      "motor_power": "350W",
+      "weight": "12 kg"
+    },
+    "created_at": "2024-01-05T10:00:00Z",
+    "updated_at": "2024-01-09T10:00:00Z",
+    "index": "products",
+    "store_id": "store_004"
+  },
+
+  {
+    "product_id": "20006",
+    "name": "Смартфон Nova X11",
+    "description": "Смартфон с AMOLED дисплеем и камерой 108 Мп.",
+    "price": { "amount": 37990.00, "currency": "RUB" },
+    "category": "Электроника",
+    "brand": "Nova",
+    "stock": { "available": 55, "reserved": 6 },
+    "sku": "SKU-20006",
+    "tags": ["смартфон", "android", "камера"],
+    "images": [
+      { "url": "https://example.com/img/x11.jpg", "alt": "Nova X11" }
+    ],
+    "specifications": {
+      "display": "6.5'' AMOLED 120Hz",
+      "camera": "108 MP + 12 MP",
+      "battery": "5000 mAh",
+      "network": "5G"
+    },
+    "created_at": "2024-01-06T10:00:00Z",
+    "updated_at": "2024-01-10T10:00:00Z",
+    "index": "products",
+    "store_id": "store_003"
+  },
+
+  {
+    "product_id": "20007",
+    "name": "Кофеварка AromaBrew 300",
+    "description": "Кофеварка с регулировкой крепости и встроенной кофемолкой.",
+    "price": { "amount": 15990.0, "currency": "RUB" },
+    "category": "Бытовая техника",
+    "brand": "Luxor",
+    "stock": { "available": 33, "reserved": 2 },
+    "sku": "SKU-20007",
+    "tags": ["кофе", "кухня", "автомат"],
+    "images": [
+      { "url": "https://example.com/img/aroma300.jpg", "alt": "AromaBrew 300" }
+    ],
+    "specifications": {
+      "power": "1450W",
+      "pressure": "15 бар",
+      "bean_capacity": "250g",
+      "modes": "эспрессо,американо,капучино"
+    },
+    "created_at": "2024-01-07T10:00:00Z",
+    "updated_at": "2024-01-11T10:00:00Z",
+    "index": "products",
+    "store_id": "store_002"
+  },
+
+  {
+    "product_id": "20008",
+    "name": "Умная лампа Lightify A60",
+    "description": "LED-лампа с регулировкой яркости и цвета через приложение.",
+    "price": { "amount": 1290.0, "currency": "RUB" },
+    "category": "Умный дом",
+    "brand": "Astra",
+    "stock": { "available": 100, "reserved": 8 },
+    "sku": "SKU-20008",
+    "tags": ["освещение", "умный дом", "iot"],
+    "images": [
+      { "url": "https://example.com/img/a60.jpg", "alt": "Lightify A60" }
+    ],
+    "specifications": {
+      "power": "9W",
+      "brightness": "800 lm",
+      "color_temperature": "2700K–6500K",
+      "connectivity": "Wi-Fi"
+    },
+    "created_at": "2024-01-08T10:00:00Z",
+    "updated_at": "2024-01-12T10:00:00Z",
+    "index": "products",
+    "store_id": "store_001"
+  },
+
+  {
+    "product_id": "20009",
+    "name": "Игровая клавиатура TerraKey RGB",
+    "description": "Механическая клавиатура с RGB-подсветкой и быстрыми переключателями.",
+    "price": { "amount": 6990.0, "currency": "RUB" },
+    "category": "Гаджеты",
+    "brand": "OmegaTech",
+    "stock": { "available": 64, "reserved": 7 },
+    "sku": "SKU-20009",
+    "tags": ["клавиатура", "игры", "rgb"],
+    "images": [
+      { "url": "https://example.com/img/terrakey.jpg", "alt": "TerraKey RGB" }
+    ],
+    "specifications": {
+      "switch_type": "Red Switch",
+      "key_rollover": "N-Key",
+      "backlight": "RGB",
+      "connection": "USB-C"
+    },
+    "created_at": "2024-01-09T10:00:00Z",
+    "updated_at": "2024-01-13T10:00:00Z",
+    "index": "products",
+    "store_id": "store_004"
+  },
+
+  {
+    "product_id": "20010",
+    "name": "Монитор UltraView 27Q",
+    "description": "27-дюймовый QHD монитор с частотой 165 Гц.",
+    "price": { "amount": 24990.0, "currency": "RUB" },
+    "category": "Электроника",
+    "brand": "XYZ",
+    "stock": { "available": 28, "reserved": 3 },
+    "sku": "SKU-20010",
+    "tags": ["монитор", "игры", "165hz"],
+    "images": [
+      { "url": "https://example.com/img/uv27.jpg", "alt": "UltraView 27Q" }
+    ],
+    "specifications": {
+      "screen_size": "27''",
+      "resolution": "2560x1440",
+      "refresh_rate": "165 Hz",
+      "panel": "IPS"
+    },
+    "created_at": "2024-01-10T10:00:00Z",
+    "updated_at": "2024-01-14T10:00:00Z",
+    "index": "products",
+    "store_id": "store_005"
+  }
+]

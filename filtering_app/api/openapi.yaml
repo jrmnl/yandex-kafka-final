@@ -1,0 +1,47 @@
+openapi: '3.0.3'
+info:
+  title: Yandex Sprint 2
+  version: '1.0'
+
+paths:
+  /blocked-products:
+    get:
+      tags:
+        - blocked-products
+      operationId: GetBlockedProducts
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+  /blocked-products/{productId}:
+    put:
+      tags:
+        - blocked-products
+      operationId: BlockProduct
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Ok
+    delete:
+      tags:
+        - blocked-products
+      operationId: RemoveBlock
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Ok

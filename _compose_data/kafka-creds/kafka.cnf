@@ -1,0 +1,42 @@
+[req]
+prompt = no
+distinguished_name = dn
+default_md = sha256
+default_bits = 4096
+req_extensions = v3_req
+
+[ dn ]
+countryName = RU
+organizationName = Yandex
+organizationalUnitName = Practice
+localityName = Moscow
+commonName = kafka
+
+[ v3_ca ]
+subjectKeyIdentifier = hash
+basicConstraints = critical,CA:true
+authorityKeyIdentifier = keyid:always,issuer:always
+keyUsage = critical,keyCertSign,cRLSign
+
+[ v3_req ]
+subjectKeyIdentifier = hash
+basicConstraints = CA:FALSE
+nsComment = "OpenSSL Generated Certificate"
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = localhost
+DNS.2 = kafka-1
+DNS.3 = kafka-1-external
+DNS.4 = kafka-2
+DNS.5 = kafka-2-external
+DNS.6 = kafka-3
+DNS.7 = kafka-3-external
+DNS.8 = kafka-mirror-1
+DNS.9 = kafka-mirror-1-external
+DNS.10 = kafka-mirror-2
+DNS.11 = kafka-mirror-2-external
+DNS.12 = kafka-mirror-3
+DNS.13 = kafka-mirror-3-external
