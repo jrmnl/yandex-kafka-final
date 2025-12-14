@@ -1,0 +1,19 @@
+groups:
+- name: targets
+  rules:
+  - alert: monitor_broker_down
+    expr: absent(kafka_server_brokerstate{env="cluster-kafka"})
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "кластер упал"
+      description: "Нет активных нод в кластере кафка"
+  - alert: monitor_mirror_broker_down
+    expr: absent(kafka_server_brokerstate{env="cluster-kafka-mirror"})
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "зеркало кластера упало"
+      description: "Нет активных нод в кластере кафка (зеркало)"
