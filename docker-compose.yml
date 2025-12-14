@@ -93,59 +93,83 @@ services:
     networks:
     - yandex-final
 
-  zookeeper-mirror:
-    image: confluentinc/cp-zookeeper:7.4.4
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-      KAFKA_OPTS: -Djava.security.auth.login.config=/etc/zookeeper/secrets/zookeeper.sasl.jaas.conf
-        -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider
-        -Dzookeeper.allowSaslFailedClients=false
-        -Dzookeeper.requireClientAuthScheme=sasl
-    volumes:
-      - ./_compose_data/zookeeper-creds:/etc/zookeeper/secrets
-    networks:
-    - yandex-final
+# zookeeper-mirror:
+#   image: confluentinc/cp-zookeeper:7.4.4
+#   environment:
+#     ZOOKEEPER_CLIENT_PORT: 2181
+#     ZOOKEEPER_TICK_TIME: 2000
+#     KAFKA_OPTS: -Djava.security.auth.login.config=/etc/zookeeper/secrets/zookeeper.sasl.jaas.conf
+#       -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider
+#       -Dzookeeper.allowSaslFailedClients=false
+#       -Dzookeeper.requireClientAuthScheme=sasl
+#   volumes:
+#     - ./_compose_data/zookeeper-creds:/etc/zookeeper/secrets
+#   networks:
+#   - yandex-final
+#
+# kafka-mirror-1:
+#   image: confluentinc/cp-kafka:7.4.4
+#   depends_on:
+#     - zookeeper
+#   volumes:
+#     - ./_compose_data/kafka-creds:/etc/kafka/secrets
+#   environment:
+#     <<: *kafka-common-env
+#     KAFKA_ZOOKEEPER_CONNECT: zookeeper-mirror:2181
+#     KAFKA_BROKER_ID: 1
+#     KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:9093,SSL_INTERNAL://kafka-mirror-1:19093'
+#   networks:
+#   - yandex-final
+#
+# kafka-mirror-2:
+#   image: confluentinc/cp-kafka:7.4.4
+#   depends_on:
+#     - zookeeper
+#   volumes:
+#     - ./_compose_data/kafka-creds:/etc/kafka/secrets
+#   environment:
+#     <<: *kafka-common-env
+#     KAFKA_ZOOKEEPER_CONNECT: zookeeper-mirror:2181
+#     KAFKA_BROKER_ID: 2
+#     KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:9094,SSL_INTERNAL://kafka-mirror-2:19093'
+#   networks:
+#   - yandex-final
+#
+# kafka-mirror-3:
+#   image: confluentinc/cp-kafka:7.4.4
+#   depends_on:
+#     - zookeeper
+#   volumes:
+#     - ./_compose_data/kafka-creds:/etc/kafka/secrets
+#   environment:
+#     <<: *kafka-common-env
+#     KAFKA_ZOOKEEPER_CONNECT: zookeeper-mirror:2181
+#     KAFKA_BROKER_ID: 3
+#     KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:9095,SSL_INTERNAL://kafka-mirror-3:19093'
+#   networks:
+#   - yandex-final
 
-  kafka-mirror-1:
-    image: confluentinc/cp-kafka:7.4.4
+  schema-registry:
+    image: confluentinc/cp-schema-registry:8.1.0
     depends_on:
       - zookeeper
-    volumes:
-      - ./_compose_data/kafka-creds:/etc/kafka/secrets
+      - kafka-1
+      - kafka-2
+      - kafka-3
     environment:
-      <<: *kafka-common-env
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper-mirror:2181
-      KAFKA_BROKER_ID: 1
-      KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:9093,SSL_INTERNAL://kafka-mirror-1:19093'
-    networks:
-    - yandex-final
-
-  kafka-mirror-2:
-    image: confluentinc/cp-kafka:7.4.4
-    depends_on:
-      - zookeeper
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: SASL_SSL://kafka-1:19093,kafka-2:19093,kafka-3:19093
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8080
+      SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: SASL_SSL
+      SCHEMA_REGISTRY_KAFKASTORE_SASL_MECHANISM: PLAIN
+      SCHEMA_REGISTRY_KAFKASTORE_SASL_JAAS_CONFIG: >
+        org.apache.kafka.common.security.plain.PlainLoginModule required
+        username="registry"
+        password="registry-secret";
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.truststore.jks
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD: drfgrfdg5324234
     volumes:
-      - ./_compose_data/kafka-creds:/etc/kafka/secrets
-    environment:
-      <<: *kafka-common-env
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper-mirror:2181
-      KAFKA_BROKER_ID: 2
-      KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:9094,SSL_INTERNAL://kafka-mirror-2:19093'
-    networks:
-    - yandex-final
-
-  kafka-mirror-3:
-    image: confluentinc/cp-kafka:7.4.4
-    depends_on:
-      - zookeeper
-    volumes:
-      - ./_compose_data/kafka-creds:/etc/kafka/secrets
-    environment:
-      <<: *kafka-common-env
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper-mirror:2181
-      KAFKA_BROKER_ID: 3
-      KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:9095,SSL_INTERNAL://kafka-mirror-3:19093'
+      - ./_compose_data/kafka-creds/kafka.truststore.jks:/etc/kafka/secrets/kafka.truststore.jks
     networks:
     - yandex-final
 
@@ -160,6 +184,7 @@ services:
       - "8080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: kafka
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8080
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-1:19093,kafka-2:19093,kafka-3:19093
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
       KAFKA_CLUSTERS_0_SSL_TRUSTSTORELOCATION: /kafka.truststore.jks
@@ -171,134 +196,159 @@ services:
       KAFKA_CLUSTERS_0_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: '' # DISABLE COMMON NAME VERIFICATION
       KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
       KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
-      KAFKA_CLUSTERS_1_NAME: kafka-mirror
-      KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS: kafka-mirror-1:19093,kafka-mirror-2:19093,kafka-mirror-3:19093
-      KAFKA_CLUSTERS_1_ZOOKEEPER: zookeeper-mirror:2181
-      KAFKA_CLUSTERS_1_SSL_TRUSTSTORELOCATION: /kafka.truststore.jks
-      KAFKA_CLUSTERS_1_SSL_TRUSTSTOREPASSWORD: 'drfgrfdg5324234'
-      KAFKA_CLUSTERS_1_PROPERTIES_SECURITY_PROTOCOL: SASL_SSL
-      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_LOCATION: /kafka.keystore.pkcs12
-      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_TYPE: PKCS12
-      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_PASSWORD: 'drfgrfdg5324234'
-      KAFKA_CLUSTERS_1_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: '' # DISABLE COMMON NAME VERIFICATION
-      KAFKA_CLUSTERS_1_PROPERTIES_SASL_MECHANISM: PLAIN
-      KAFKA_CLUSTERS_1_PROPERTIES_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
+      #KAFKA_CLUSTERS_1_NAME: kafka-mirror
+      #KAFKA_CLUSTERS_1_SCHEMAREGISTRY: http://schema-registry:8080
+      #KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS: kafka-mirror-1:19093,kafka-mirror-2:19093,kafka-mirror-3:19093
+      #KAFKA_CLUSTERS_1_ZOOKEEPER: zookeeper-mirror:2181
+      #KAFKA_CLUSTERS_1_SSL_TRUSTSTORELOCATION: /kafka.truststore.jks
+      #KAFKA_CLUSTERS_1_SSL_TRUSTSTOREPASSWORD: 'drfgrfdg5324234'
+      #KAFKA_CLUSTERS_1_PROPERTIES_SECURITY_PROTOCOL: SASL_SSL
+      #KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_LOCATION: /kafka.keystore.pkcs12
+      #KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_TYPE: PKCS12
+      #KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_PASSWORD: 'drfgrfdg5324234'
+      #KAFKA_CLUSTERS_1_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: '' # DISABLE COMMON NAME VERIFICATION
+      #KAFKA_CLUSTERS_1_PROPERTIES_SASL_MECHANISM: PLAIN
+      #KAFKA_CLUSTERS_1_PROPERTIES_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
     volumes:
       - ./_compose_data/kafka-creds/kafka.keystore.pkcs12:/kafka.keystore.pkcs12
       - ./_compose_data/kafka-creds/kafka.truststore.jks:/kafka.truststore.jks
     networks:
     - yandex-final
+#
+# grafana:
+#   image: "grafana/grafana:latest"
+#   ports:
+#    - "3001:3000"
+#   environment:
+#     GF_PATHS_DATA : /var/lib/grafana
+#     GF_SECURITY_ADMIN_PASSWORD : kafka
+#   volumes:
+#    - ./_compose_data/grafana/provisioning:/etc/grafana/provisioning
+#    - ./_compose_data/grafana/dashboards:/var/lib/grafana/dashboards
+#   depends_on:
+#    - prometheus
+#   networks:
+#     - yandex-final
+#
+# prometheus:
+#   image: "prom/prometheus:latest"
+#   ports:
+#    - "9090:9090"
+#   volumes:
+#    - ./_compose_data/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+#    - ./_compose_data/prometheus/alert.rules:/etc/prometheus/alert.rules
+#   command: "--config.file=/etc/prometheus/prometheus.yml"
+#   networks:
+#     - yandex-final
+#
+# alertmanager:
+#   image: prom/alertmanager:v0.21.0
+#   volumes:
+#     - ./_compose_data/alertmanager/config.yml:/etc/alertmanager/config.yml
+#   command:
+#     - '--config.file=/etc/alertmanager/config.yml'
+#     - '--storage.path=/alertmanager'
+#     - '--log.level=debug'
+#   ports:
+#     - 9093:9093
+#   networks:
+#     - yandex-final
+#
+# jmx-kafka-1:
+#   image: sscaling/jmx-prometheus-exporter
+#   depends_on:
+#    - kafka-1
+#   environment:
+#    CONFIG_YML : /etc/jmx_exporter/config.yml
+#    JVM_OPTS: -Xmx128M
+#   volumes:
+#    - ./_compose_data/jmx_exporter/config_kafka-1.yml:/etc/jmx_exporter/config.yml
+#   networks:
+#     - yandex-final
+#
+# jmx-kafka-2:
+#   image: sscaling/jmx-prometheus-exporter
+#   depends_on:
+#    - kafka-2
+#   environment:
+#    CONFIG_YML : /etc/jmx_exporter/config.yml
+#    JVM_OPTS: -Xmx128M
+#   volumes:
+#    - ./_compose_data/jmx_exporter/config_kafka-2.yml:/etc/jmx_exporter/config.yml
+#   networks:
+#     - yandex-final
+#
+# jmx-kafka-3:
+#   image: sscaling/jmx-prometheus-exporter
+#   depends_on:
+#    - kafka-3
+#   environment:
+#    CONFIG_YML : /etc/jmx_exporter/config.yml
+#    JVM_OPTS: -Xmx128M
+#   volumes:
+#    - ./_compose_data/jmx_exporter/config_kafka-3.yml:/etc/jmx_exporter/config.yml
+#   networks:
+#     - yandex-final
+#
+# jmx-kafka-mirror-1:
+#   image: sscaling/jmx-prometheus-exporter
+#   depends_on:
+#    - kafka-mirror-1
+#   environment:
+#    CONFIG_YML : /etc/jmx_exporter/config.yml
+#    JVM_OPTS: -Xmx128M
+#   volumes:
+#    - ./_compose_data/jmx_exporter/config_kafka-mirror-1.yml:/etc/jmx_exporter/config.yml
+#   networks:
+#     - yandex-final
+#
+# jmx-kafka-mirror-2:
+#   image: sscaling/jmx-prometheus-exporter
+#   depends_on:
+#    - kafka-mirror-2
+#   environment:
+#    CONFIG_YML : /etc/jmx_exporter/config.yml
+#    JVM_OPTS: -Xmx128M
+#   volumes:
+#    - ./_compose_data/jmx_exporter/config_kafka-mirror-2.yml:/etc/jmx_exporter/config.yml
+#   networks:
+#     - yandex-final
+#
+# jmx-kafka-mirror-3:
+#   image: sscaling/jmx-prometheus-exporter
+#   depends_on:
+#    - kafka-3
+#   environment:
+#    CONFIG_YML : /etc/jmx_exporter/config.yml
+#    JVM_OPTS: -Xmx128M
+#   volumes:
+#    - ./_compose_data/jmx_exporter/config_kafka-mirror-3.yml:/etc/jmx_exporter/config.yml
+#   networks:
+#     - yandex-final
 
-  grafana:
-    image: "grafana/grafana:latest"
-    ports:
-     - "3001:3000"
-    environment:
-      GF_PATHS_DATA : /var/lib/grafana
-      GF_SECURITY_ADMIN_PASSWORD : kafka
-    volumes:
-     - ./_compose_data/grafana/provisioning:/etc/grafana/provisioning
-     - ./_compose_data/grafana/dashboards:/var/lib/grafana/dashboards
+  shop_app:
     depends_on:
-     - prometheus
-    networks:
-      - yandex-final
-
-  prometheus:
-    image: "prom/prometheus:latest"
-    ports:
-     - "9090:9090"
+      - kafka-1
+      - kafka-2
+      - kafka-3
+      - schema-registry
+      - kafka-init
+    build:
+      context: ./shop_app
     volumes:
-     - ./_compose_data/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-     - ./_compose_data/prometheus/alert.rules:/etc/prometheus/alert.rules
-    command: "--config.file=/etc/prometheus/prometheus.yml"
-    networks:
-      - yandex-final
-
-  alertmanager:
-    image: prom/alertmanager:v0.21.0
-    volumes:
-      - ./_compose_data/alertmanager/config.yml:/etc/alertmanager/config.yml
-    command:
-      - '--config.file=/etc/alertmanager/config.yml'
-      - '--storage.path=/alertmanager'
-      - '--log.level=debug'
-    ports:
-      - 9093:9093
-    networks:
-      - yandex-final
-
-  jmx-kafka-1:
-    image: sscaling/jmx-prometheus-exporter
-    depends_on:
-     - kafka-1
+      - ./_compose_data/ca.crt:/etc/shop_app/ca.crt
+      - ./_compose_data/data.json:/etc/shop_app/data.json
     environment:
-     CONFIG_YML : /etc/jmx_exporter/config.yml
-     JVM_OPTS: -Xmx128M
-    volumes:
-     - ./_compose_data/jmx_exporter/config_kafka-1.yml:/etc/jmx_exporter/config.yml
+      SSL_CA_LOCATION: /etc/shop_app/ca.crt
+      FILE_PATH: /etc/shop_app/data.json
+      BOOTSTRAP_SERVERS: kafka-1:19093,kafka-2:19093,kafka-3:19093
+      REGISTRY: http://schema-registry:8080/
+      TOPIC: products-raw
+      PRODUCER_USERNAME: shop_app
+      PRODUCER_PASSWORD: shop_app-secret
     networks:
-      - yandex-final
-
-  jmx-kafka-2:
-    image: sscaling/jmx-prometheus-exporter
-    depends_on:
-     - kafka-2
-    environment:
-     CONFIG_YML : /etc/jmx_exporter/config.yml
-     JVM_OPTS: -Xmx128M
-    volumes:
-     - ./_compose_data/jmx_exporter/config_kafka-2.yml:/etc/jmx_exporter/config.yml
-    networks:
-      - yandex-final
-
-  jmx-kafka-3:
-    image: sscaling/jmx-prometheus-exporter
-    depends_on:
-     - kafka-3
-    environment:
-     CONFIG_YML : /etc/jmx_exporter/config.yml
-     JVM_OPTS: -Xmx128M
-    volumes:
-     - ./_compose_data/jmx_exporter/config_kafka-3.yml:/etc/jmx_exporter/config.yml
-    networks:
-      - yandex-final
-
-  jmx-kafka-mirror-1:
-    image: sscaling/jmx-prometheus-exporter
-    depends_on:
-     - kafka-mirror-1
-    environment:
-     CONFIG_YML : /etc/jmx_exporter/config.yml
-     JVM_OPTS: -Xmx128M
-    volumes:
-     - ./_compose_data/jmx_exporter/config_kafka-mirror-1.yml:/etc/jmx_exporter/config.yml
-    networks:
-      - yandex-final
-
-  jmx-kafka-mirror-2:
-    image: sscaling/jmx-prometheus-exporter
-    depends_on:
-     - kafka-mirror-2
-    environment:
-     CONFIG_YML : /etc/jmx_exporter/config.yml
-     JVM_OPTS: -Xmx128M
-    volumes:
-     - ./_compose_data/jmx_exporter/config_kafka-mirror-2.yml:/etc/jmx_exporter/config.yml
-    networks:
-      - yandex-final
-
-  jmx-kafka-mirror-3:
-    image: sscaling/jmx-prometheus-exporter
-    depends_on:
-     - kafka-3
-    environment:
-     CONFIG_YML : /etc/jmx_exporter/config.yml
-     JVM_OPTS: -Xmx128M
-    volumes:
-     - ./_compose_data/jmx_exporter/config_kafka-mirror-3.yml:/etc/jmx_exporter/config.yml
-    networks:
-      - yandex-final
+    - yandex-final
 
 networks:
   yandex-final:
+    external: true

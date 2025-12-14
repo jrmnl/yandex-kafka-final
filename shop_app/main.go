@@ -1,37 +1,35 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"os"
+	"os/signal"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/confluentinc/confluent-kafka-go/v2/schemaregistry"
 )
 
 type AppSettings struct {
-	BootstrapServers       string
-	SchemaRegistryUrl      string
-	SslCaLocation          string
-	SslCertificateLocation string
-	SslKeyLocation         string
-	ProductsTopic          string
-	ProducerUsername       string
-	ProducerPassword       string
-	FilePath               string
+	BootstrapServers  string
+	SchemaRegistryUrl string
+	SslCaLocation     string
+	ProductsTopic     string
+	ProducerUsername  string
+	ProducerPassword  string
+	FilePath          string
 }
 
 func getAppSettings() AppSettings {
 	return AppSettings{
-		BootstrapServers:       getEnv("BOOTSTRAP_SERVERS", "kafka-1:9092,kafka-2:9092,kafka-3:9092"),
-		SchemaRegistryUrl:      getEnv("REGISTRY", "http://schema-registry:8080/"),
-		SslCaLocation:          getEnv("SSL_CA_LOCATION", "./ca.crt"),
-		SslCertificateLocation: getEnv("SSL_CERTIFICATE_LOCATION", "./kafka-1-creds/kafka-1.crt"),
-		SslKeyLocation:         getEnv("SSL_KEY_LOCATION", "./kafka-1-creds/kafka-1.key"),
-		ProductsTopic:          getEnv("TOPIC_1", "products-raw"),
-		ProducerUsername:       getEnv("PRODUCER_USERNAME", "producer"),
-		ProducerPassword:       getEnv("PRODUCER_PASSWORD", "producer-secret"),
-		FilePath:               getEnv("FILE_PATH", "data.json"),
+		BootstrapServers:  getEnv("BOOTSTRAP_SERVERS", "kafka-1:19093,kafka-2:19093,kafka-3:19093"),
+		SchemaRegistryUrl: getEnv("REGISTRY", "http://schema-registry:8080/"),
+		SslCaLocation:     getEnv("SSL_CA_LOCATION", "./ca.crt"),
+		ProductsTopic:     getEnv("TOPIC", "products-raw"),
+		ProducerUsername:  getEnv("PRODUCER_USERNAME", "shop_app"),
+		ProducerPassword:  getEnv("PRODUCER_PASSWORD", "shop_app-secret"),
+		FilePath:          getEnv("FILE_PATH", "data.json"),
 	}
 }
 
@@ -43,47 +41,41 @@ func getEnv(key, defaultValue string) string {
 }
 
 func main() {
+	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 	settings := getAppSettings()
 
 	products := getProducts(settings.FilePath)
 	producerConfig := getProducerConfig(settings)
+	WaitTopic(ctx, producerConfig, settings.ProductsTopic)
+	registryConfig := getRegistryConfig(settings)
+	WaitRegistry(ctx, registryConfig)
 
-	serializer := NewSerializer[Product](getRegistryConfig(settings), settings.ProductsTopic)
+	serializer := NewSerializer[Product](registryConfig, settings.ProductsTopic)
 
 	ProduceMessages(producerConfig, settings.ProductsTopic, products, serializer)
+	log.Println("Все сообщения из файла отправлены")
 }
 
 func getProducerConfig(settings AppSettings) *kafka.ConfigMap {
 	return &kafka.ConfigMap{
-		"bootstrap.servers": settings.BootstrapServers,
-		//"ssl.ca.location":          settings.SslCaLocation,
-		// "ssl.certificate.location": settings.SslCertificateLocation,
-		// "ssl.key.location":         settings.SslKeyLocation,
+		"bootstrap.servers":        settings.BootstrapServers,
+		"ssl.ca.location":          settings.SslCaLocation,
 		"message.timeout.ms":       10000,
 		"message.send.max.retries": 3,
 		"acks":                     "all",
-		//"security.protocol":        "SASL_SSL",
-		//"sasl.mechanism":           "PLAIN",
-		//"sasl.username":            settings.ProducerUsername,
-		//"sasl.password":            settings.ProducerPassword,
+		"security.protocol":        "SASL_SSL",
+		"sasl.mechanism":           "PLAIN",
+		"sasl.username":            settings.ProducerUsername,
+		"sasl.password":            settings.ProducerPassword,
 	}
 }
 
 func getRegistryConfig(settings AppSettings) *schemaregistry.Config {
-	/*if settings.UseSasl {
-		serConfig := schemaregistry.NewConfigWithBasicAuthentication(
-			settings.SchemaRegistryUrl,
-			settings.ProducerUser,
-			settings.ProducerPassword)
-		serConfig.SslCaLocation = settings.CertificatePath
-		return serConfig
-	}*/
-
 	return schemaregistry.NewConfig(settings.SchemaRegistryUrl)
 }
 
 func getProducts(path string) []Product {
-	bytes, err := os.ReadFile("data.json")
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
 	}

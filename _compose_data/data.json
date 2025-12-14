@@ -66,7 +66,7 @@
       "suction_power": "2500 Pa",
       "battery_capacity": "5200 mAh",
       "navigation": "LiDAR",
-      "functions": ["сухая уборка", "влажная уборка"]
+      "functions": "сухая уборка,влажная уборка"
     },
     "created_at": "2024-01-03T10:00:00Z",
     "updated_at": "2024-01-07T10:00:00Z",
@@ -166,7 +166,7 @@
       "power": "1450W",
       "pressure": "15 бар",
       "bean_capacity": "250g",
-      "modes": ["эспрессо", "американо", "капучино"]
+      "modes": "эспрессо,американо,капучино"
     },
     "created_at": "2024-01-07T10:00:00Z",
     "updated_at": "2024-01-11T10:00:00Z",

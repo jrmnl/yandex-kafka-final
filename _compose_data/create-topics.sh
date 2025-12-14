@@ -12,6 +12,15 @@ echo 'ssl.endpoint.identification.algorithm=' >> /tmp/adminclient-configs.conf
 
 cub kafka-ready -b $BROKERS 1 120 --config /tmp/adminclient-configs.conf
 
+echo "Даем права для схема реджистри";
+kafka-acls \
+  --bootstrap-server $BROKERS \
+  --command-config /tmp/adminclient-configs.conf \
+  --add --allow-principal User:registry \
+  --operation All \
+  --topic _schemas \
+  --group schema-registry
+
 for TOPIC in products-raw products ; do
   echo "Создаем топик $TOPIC";
   kafka-topics --create \
@@ -35,3 +44,12 @@ for TOPIC in blocked-products blocked-products-group-table; do
     --replication-factor 3 \
     --config min.insync.replicas=2
 done
+
+
+echo "Права для shop_app";
+kafka-acls \
+  --bootstrap-server $BROKERS \
+  --command-config /tmp/adminclient-configs.conf \
+  --add --allow-principal User:shop_app \
+  --operation write \
+  --topic products-raw
