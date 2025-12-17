@@ -27,8 +27,8 @@ func getAppSettings() AppSettings {
 		SchemaRegistryUrl: getEnv("REGISTRY", "http://schema-registry:8080/"),
 		SslCaLocation:     getEnv("SSL_CA_LOCATION", "./ca.crt"),
 		ProductsTopic:     getEnv("TOPIC", "products-raw"),
-		ProducerUsername:  getEnv("PRODUCER_USERNAME", "shop_app"),
-		ProducerPassword:  getEnv("PRODUCER_PASSWORD", "shop_app-secret"),
+		ProducerUsername:  getEnv("USERNAME", "shop_app"),
+		ProducerPassword:  getEnv("PASSWORD", "shop_app-secret"),
 		FilePath:          getEnv("FILE_PATH", "data.json"),
 	}
 }

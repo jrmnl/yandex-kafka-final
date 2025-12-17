@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/IBM/sarama"
 	"github.com/confluentinc/confluent-kafka-go/v2/schemaregistry"
@@ -54,17 +57,20 @@ func NewGinServer(handler api.ServerInterface, port string) *http.Server {
 func main() {
 	log.Println("Запущено")
 	settings := getSettings()
+	saramaCfg := getSaramaConfig(settings)
+	goka.ReplaceGlobalConfig(saramaCfg)
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 
 	log.Println("Ожидаем создание топиков")
-	// WaitTopics(ctx)
+	WaitTopics(ctx, settings.Brokers, saramaCfg, []string{
+		settings.BlockedProductsGroupTableTopic,
+		settings.BlockedProductsTopic,
+		settings.InputProductsTopic,
+		settings.OutputProductsTopic,
+	})
 	log.Println("Ожидание топиков завершено")
 
 	g, ctx := errgroup.WithContext(ctx)
-
-	cfg := goka.DefaultConfig()
-	cfg.Consumer.Offsets.Initial = sarama.OffsetOldest
-	goka.ReplaceGlobalConfig(cfg)
 
 	registryConfig := getSchemaRegistryConfig(settings.SchemaRegistryUrl)
 	blockedProductCodec := codecs.NewAvroSerializer[events.BlockedProduct](
@@ -76,11 +82,6 @@ func main() {
 	inputProductCodec := codecs.NewAvroSerializer[Product](
 		registryConfig,
 		settings.InputProductsTopic)
-	/*
-		outpurProductCodec := codecs.NewAvroSerializer[Product](
-		registryConfig,
-		settings.OutputProductsTopic)
-	*/
 
 	emitter, err := GetBlockedProductsEmitter(
 		settings.Brokers,
@@ -110,7 +111,8 @@ func main() {
 			return err
 		}
 
-		return processor.Run(ctx)
+		err = processor.Run(ctx)
+		return err
 	})
 
 	g.Go(func() error {
@@ -128,11 +130,13 @@ func main() {
 			return err
 		}
 
-		return processor.Run(ctx)
+		err = processor.Run(ctx)
+		return err
 	})
 
 	g.Go(func() error {
-		return view.Run(ctx)
+		err := view.Run(ctx)
+		return err
 	})
 
 	handler := NewApiHandler(NewBlockedProductsService(view, emitter))
@@ -147,58 +151,12 @@ func main() {
 	log.Println("Завершено")
 }
 
-/*
-// Ждет создание топика в кафке
-func WaitTopics(ctx context.Context) {
-	for {
-		time.Sleep(2 * time.Second)
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			admin, err := sarama.NewClusterAdmin(Brokers, sarama.NewConfig())
-			if err != nil {
-				log.Printf("ошибка создания админ клиента: %v", err)
-				continue
-			}
-			defer admin.Close()
-
-			topics, err := admin.ListTopics()
-			if err != nil {
-				log.Printf("ошибка при получении топиков: %v", err)
-			} else {
-				log.Printf("получены топики: %v", topics)
-				expectedTopics := []string{
-					"messages",
-					"filtered_messages",
-					"blocked_users",
-					"blocked_users-group-table",
-					"blocked_words",
-					"blocked_words-group-table",
-				}
-				keys := slices.Collect(maps.Keys(topics))
-
-				allExists := true
-				for _, t := range expectedTopics {
-					if !slices.Contains(keys, t) {
-						log.Printf("топик %s еще не создан", t)
-						allExists = false
-						break
-					}
-				}
-
-				if allExists {
-					return
-				}
-			}
-		}
-	}
-}
-*/
-
 type Settings struct {
 	Brokers                        []string
 	SchemaRegistryUrl              string
+	SslCaLocation                  string
+	Username                       string
+	Password                       string
 	InputProductsTopic             string
 	OutputProductsTopic            string
 	BlockedProductsTopic           string
@@ -212,14 +170,54 @@ func getSchemaRegistryConfig(url string) *schemaregistry.Config {
 }
 
 func getSettings() Settings {
+	servers := getEnv("BOOTSTRAP_SERVERS", "kafka-1:19093,kafka-2:19093,kafka-3:19093")
+	brokers := strings.Split(servers, ",")
 	return Settings{
-		Brokers:                        []string{"kafka-1:9092", "kafka-2:9092", "kafka-3:9092"},
-		SchemaRegistryUrl:              "http://schema-registry:8080",
-		InputProductsTopic:             "products-raw",
-		OutputProductsTopic:            "products",
-		BlockedProductsTopic:           "blocked-products",
-		BlockedProductsGroup:           "blocked-products-group",
-		BlockedProductsGroupTableTopic: "blocked-products-group-table",
-		ProductsConsumerGroup:          "products-raw-group",
+		Brokers:                        brokers,
+		SchemaRegistryUrl:              getEnv("REGISTRY", "http://schema-registry:8080"),
+		SslCaLocation:                  getEnv("SSL_CA_LOCATION", "./ca.crt"),
+		Username:                       getEnv("USERNAME", "filtering_app"),
+		Password:                       getEnv("PASSWORD", "filtering_app-secret"),
+		BlockedProductsGroup:           getEnv("BLOCKED_PRODUCTS_GROUP", "blocked-products-group"),
+		ProductsConsumerGroup:          getEnv("PRODUCTS_RAW_GROUP", "products-raw-group"),
+		InputProductsTopic:             getEnv("PRODUCTS_RAW_TOPIC", "products-raw"),
+		OutputProductsTopic:            getEnv("PRODUCTS_TOPIC", "products"),
+		BlockedProductsTopic:           getEnv("BLOCKED_PRODUCTS_TOPIC", "blocked-products"),
+		BlockedProductsGroupTableTopic: getEnv("BLOCKED_PRODUCTS_GROUP_TABLE", "blocked-products-group-table"),
 	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+func getSaramaConfig(settings Settings) *sarama.Config {
+	config := goka.DefaultConfig()
+	config.Consumer.Offsets.Initial = sarama.OffsetOldest
+	config.Producer.RequiredAcks = sarama.WaitForAll
+
+	config.Net.SASL.Enable = true
+	config.Net.SASL.User = settings.Username
+	config.Net.SASL.Password = settings.Password
+	config.Net.SASL.Mechanism = sarama.SASLTypePlaintext
+	config.Net.TLS.Enable = true
+
+	caCert, err := os.ReadFile(settings.SslCaLocation)
+	if err != nil {
+		log.Fatalln("Не загрузить сертификат")
+	}
+
+	caPool := x509.NewCertPool()
+	caPool.AppendCertsFromPEM(caCert)
+
+	tlsConfig := &tls.Config{
+		RootCAs: caPool,
+	}
+
+	config.Net.TLS.Enable = true
+	config.Net.TLS.Config = tlsConfig
+	return config
 }

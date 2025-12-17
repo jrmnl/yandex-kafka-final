@@ -335,17 +335,39 @@ services:
       - kafka-init
     build:
       context: ./shop_app
-    volumes:
-      - ./_compose_data/ca.crt:/etc/shop_app/ca.crt
-      - ./_compose_data/data.json:/etc/shop_app/data.json
     environment:
       SSL_CA_LOCATION: /etc/shop_app/ca.crt
       FILE_PATH: /etc/shop_app/data.json
       BOOTSTRAP_SERVERS: kafka-1:19093,kafka-2:19093,kafka-3:19093
       REGISTRY: http://schema-registry:8080/
       TOPIC: products-raw
-      PRODUCER_USERNAME: shop_app
-      PRODUCER_PASSWORD: shop_app-secret
+      USERNAME: shop_app
+      PASSWORD: shop_app-secret
+    volumes:
+      - ./_compose_data/ca.crt:/etc/shop_app/ca.crt
+      - ./_compose_data/data.json:/etc/shop_app/data.json
+    networks:
+    - yandex-final
+
+  filtering_app:
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+      - schema-registry
+      - kafka-init
+    build:
+      context: ./filtering_app
+    environment:
+      SSL_CA_LOCATION: /etc/filtering_app/ca.crt
+      BOOTSTRAP_SERVERS: kafka-1:19093,kafka-2:19093,kafka-3:19093
+      REGISTRY: http://schema-registry:8080/
+      USERNAME: filtering_app
+      PASSWORD: filtering_app-secret
+    volumes:
+      - ./_compose_data/ca.crt:/etc/filtering_app/ca.crt
+    ports:
+    - 8099:8099
     networks:
     - yandex-final
 

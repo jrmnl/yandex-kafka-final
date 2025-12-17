@@ -21,6 +21,48 @@ kafka-acls \
   --topic _schemas \
   --group schema-registry
 
+echo "Права для shop_app";
+kafka-acls \
+  --bootstrap-server $BROKERS \
+  --command-config /tmp/adminclient-configs.conf \
+  --add --allow-principal User:shop_app \
+  --operation write \
+  --topic products-raw
+
+echo "Права для filtering_app";
+kafka-acls \
+  --bootstrap-server $BROKERS \
+  --command-config /tmp/adminclient-configs.conf \
+  --add --allow-principal User:filtering_app \
+  --operation read \
+  --topic products-raw \
+  --group products-raw-group
+
+kafka-acls \
+  --bootstrap-server $BROKERS \
+  --command-config /tmp/adminclient-configs.conf \
+  --add --allow-principal User:filtering_app \
+  --operation write \
+  --topic products
+
+kafka-acls \
+  --bootstrap-server $BROKERS \
+  --command-config /tmp/adminclient-configs.conf \
+  --add --allow-principal User:filtering_app \
+  --operation read \
+  --topic blocked-products \
+  --topic blocked-products-group-table \
+  --group blocked-products-group
+
+kafka-acls \
+  --bootstrap-server $BROKERS \
+  --command-config /tmp/adminclient-configs.conf \
+  --add --allow-principal User:filtering_app \
+  --operation write \
+  --operation DescribeConfigs \
+  --topic blocked-products \
+  --topic blocked-products-group-table
+
 for TOPIC in products-raw products ; do
   echo "Создаем топик $TOPIC";
   kafka-topics --create \
@@ -44,12 +86,3 @@ for TOPIC in blocked-products blocked-products-group-table; do
     --replication-factor 3 \
     --config min.insync.replicas=2
 done
-
-
-echo "Права для shop_app";
-kafka-acls \
-  --bootstrap-server $BROKERS \
-  --command-config /tmp/adminclient-configs.conf \
-  --add --allow-principal User:shop_app \
-  --operation write \
-  --topic products-raw
