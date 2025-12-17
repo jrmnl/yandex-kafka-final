@@ -181,7 +181,7 @@ services:
       - kafka-2
       - kafka-3
     ports:
-      - "8080:8080"
+      - 8080:8080
     environment:
       KAFKA_CLUSTERS_0_NAME: kafka
       KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8080
@@ -371,6 +371,131 @@ services:
     networks:
     - yandex-final
 
+  kafka-connect:
+    build:
+      context: ./_compose_data/kafka-connect
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+      - schema-registry
+    ports:
+      - 8083:8083
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: kafka-1:19093,kafka-2:19093,kafka-3:19093
+
+      CONNECT_SECURITY_PROTOCOL: SASL_SSL
+      CONNECT_SASL_MECHANISM: PLAIN
+      CONNECT_SSL_TRUSTSTORE_LOCATION: /etc/kafka-connect/kafka.truststore.jks
+      CONNECT_SSL_TRUSTSTORE_PASSWORD: drfgrfdg5324234
+      CONNECT_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
+
+      CONNECT_CONSUMER_SECURITY_PROTOCOL: SASL_SSL
+      CONNECT_CONSUMER_SASL_MECHANISM: PLAIN
+      CONNECT_CONSUMER_SSL_TRUSTSTORE_LOCATION: /etc/kafka-connect/kafka.truststore.jks
+      CONNECT_CONSUMER_SSL_TRUSTSTORE_PASSWORD: drfgrfdg5324234
+      CONNECT_CONSUMER_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
+
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: 'kafka-connect'
+      CONNECT_REST_ADVERTISED_HOST_NAME: 'localhost'
+
+      # Хранение конфигурации, смещений и статусов
+      CONNECT_CONFIG_STORAGE_TOPIC: 'connect-config-storage'
+      CONNECT_OFFSET_STORAGE_TOPIC: 'connect-offset-storage'
+      CONNECT_STATUS_STORAGE_TOPIC: 'connect-status-storage'
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+
+      # Конвертеры
+      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+      CONNECT_VALUE_CONVERTER: "io.confluent.connect.avro.AvroConverter"
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry:8080'
+
+      # Пути к плагинам
+      CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/jars
+    volumes:
+      - ./_compose_data/confluent-hub-components/:/etc/kafka-connect/jars
+      - ./_compose_data/kafka-creds/kafka.keystore.pkcs12:/etc/kafka-connect/kafka.keystore.pkcs12
+      - ./_compose_data/kafka-creds/kafka.truststore.jks:/etc/kafka-connect/kafka.truststore.jks
+    networks:
+      - yandex-final
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
+    environment:
+      - node.name=elasticsearch
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - 9200:9200
+    networks:
+      - yandex-final
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.1
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+    networks:
+      - yandex-final
+
+configs:
+  kibana:
+    content: |
+      server.host: "0.0.0.0"
+      elasticsearch.hosts: ["http://elasticsearch:9200"]
+      elasticsearch.username: "elastic"
+      elasticsearch.password: "admin"
+
+
+  #postgres:
+  #  image: postgres:17.6
+  #  environment:
+  #    POSTGRES_USER: admin
+  #    POSTGRES_PASSWORD: admin
+  #    POSTGRES_DB: products
+  #  ports:
+  #    - 5432:5432
+  #  networks:
+  #    - yandex-final
+#
+  #pgadmin:
+  #  image: dpage/pgadmin4:9.8.0
+  #  depends_on:
+  #    - postgres
+  #  environment:
+  #    PGADMIN_DEFAULT_EMAIL: admin@admin.com
+  #    PGADMIN_DEFAULT_PASSWORD: admin
+  #  ports:
+  #    - 8050:80
+  #  configs:
+  #    - source: pgadmin_servers
+  #      target: /pgadmin4/servers.json
+  #  networks:
+  #    - yandex-final
+
 networks:
   yandex-final:
     external: true
+
+#configs:
+#  pgadmin_servers:
+#    content: |
+#      {
+#        "Servers": {
+#          "database": {
+#            "Name": "database",
+#            "Group": "Servers",
+#            "Host": "postgres",
+#            "Port": 5432,
+#            "MaintenanceDB": "products",
+#            "Username": "admin",
+#            "Password": "admin"
+#          }
+#        }
+#      }

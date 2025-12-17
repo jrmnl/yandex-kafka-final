@@ -77,6 +77,7 @@ func GetProductFiltrationProcessor(
 	blockedProductsTableCodec *codecs.Avro[[]int],
 	inputTopic string,
 	outputTopic string,
+	productRawCodec *codecs.Avro[Product],
 	productCodec *codecs.Avro[Product]) (*goka.Processor, error) {
 
 	g := goka.DefineGroup(
@@ -85,26 +86,28 @@ func GetProductFiltrationProcessor(
 		goka.Output(goka.Stream(outputTopic), productCodec),
 		goka.Input(
 			goka.Stream(inputTopic),
-			productCodec,
+			productRawCodec,
 			func(ctx goka.Context, msg any) {
-				productId, err := strconv.Atoi(ctx.Key())
-				if err != nil {
-					log.Printf(
-						"Ошибка десериализации ключа (%s): %v",
-						ctx.Key(),
-						err)
-					return
-				}
-
-				blockedProductsA := ctx.Lookup(goka.Table(blockedProductsTable), BLOCKED_PRODUCT_KEY)
-				if blockedProducts, ok := blockedProductsA.([]int); ok {
-					if slices.Contains(blockedProducts, productId) {
-						log.Printf("Продукт заблокирован: %s", ctx.Key())
+				if message, ok := msg.(Product); ok {
+					productId, err := strconv.Atoi(ctx.Key())
+					if err != nil {
+						log.Printf(
+							"Ошибка десериализации ключа (%s): %v",
+							ctx.Key(),
+							err)
 						return
 					}
-				}
 
-				ctx.Emit(goka.Stream(outputTopic), ctx.Key(), msg)
+					blockedProductsA := ctx.Lookup(goka.Table(blockedProductsTable), BLOCKED_PRODUCT_KEY)
+					if blockedProducts, ok := blockedProductsA.([]int); ok {
+						if slices.Contains(blockedProducts, productId) {
+							log.Printf("Продукт заблокирован: %s", ctx.Key())
+							return
+						}
+					}
+
+					ctx.Emit(goka.Stream(outputTopic), ctx.Key(), message)
+				}
 			}),
 	)
 

@@ -82,6 +82,9 @@ func main() {
 	inputProductCodec := codecs.NewAvroSerializer[Product](
 		registryConfig,
 		settings.InputProductsTopic)
+	outputProductCodec := codecs.NewAvroSerializer[Product](
+		registryConfig,
+		settings.OutputProductsTopic)
 
 	emitter, err := GetBlockedProductsEmitter(
 		settings.Brokers,
@@ -124,6 +127,7 @@ func main() {
 			settings.InputProductsTopic,
 			settings.OutputProductsTopic,
 			inputProductCodec,
+			outputProductCodec,
 		)
 
 		if err != nil {
