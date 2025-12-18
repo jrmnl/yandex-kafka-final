@@ -1,0 +1,44 @@
+{
+    "name": "mirror-connector",
+    "connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+
+    "source.cluster.alias": "mm-connector-source",
+    "topics": "products|products-raw|blocked-products|blocked-products-group-table",
+
+    "key.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+    "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+
+    "source.cluster.bootstrap.servers": "kafka-1:19093,kafka-2:19093,kafka-3:19093",
+    "target.cluster.bootstrap.servers": "kafka-mirror-1:19093,kafka-mirror-2:19093,kafka-mirror-3:19093",
+    "producer.override.bootstrap.servers": "kafka-mirror-1:19093,kafka-mirror-2:19093,kafka-mirror-3:19093",
+
+    "source.consumer.security.protocol": "SASL_SSL",
+    "source.consumer.sasl.mechanism": "PLAIN",
+    "source.consumer.ssl.truststore.location": "/etc/kafka-connect/kafka.truststore.jks",
+    "source.consumer.ssl.truststore.password": "drfgrfdg5324234",
+    "source.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"admin-secret\";",
+
+    "source.producer.security.protocol": "SASL_SSL",
+    "source.producer.sasl.mechanism": "PLAIN",
+    "source.producer.ssl.truststore.location": "/etc/kafka-connect/kafka.truststore.jks",
+    "source.producer.ssl.truststore.password": "drfgrfdg5324234",
+    "source.producer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"admin-secret\";",
+
+    "source.admin.security.protocol": "SASL_SSL",
+    "source.admin.sasl.mechanism": "PLAIN",
+    "source.admin.ssl.truststore.location": "/etc/kafka-connect/kafka.truststore.jks",
+    "source.admin.ssl.truststore.password": "drfgrfdg5324234",
+    "source.admin.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"admin-secret\";",
+
+
+    "target.producer.security.protocol": "SASL_SSL",
+    "target.producer.sasl.mechanism": "PLAIN",
+    "target.producer.ssl.truststore.location": "/etc/kafka-connect/kafka.truststore.jks",
+    "target.producer.ssl.truststore.password": "drfgrfdg5324234",
+    "target.producer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"admin-secret\";",
+    "target.admin.security.protocol": "SASL_SSL",
+    "target.admin.sasl.mechanism": "PLAIN",
+    "target.admin.ssl.truststore.location": "/etc/kafka-connect/kafka.truststore.jks",
+    "target.admin.ssl.truststore.password": "drfgrfdg5324234",
+    "target.admin.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"admin-secret\";"
+}

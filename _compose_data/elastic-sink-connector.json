@@ -1,0 +1,7 @@
+{
+  "name": "elastic-sink-connector",
+  "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
+  "topics": "products",
+  "connection.url": "http://elasticsearch:9200",
+  "type.name": "_doc"
+}

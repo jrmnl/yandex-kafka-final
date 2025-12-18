@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"embed"
 	"log"
 	"net"
 	"net/http"
@@ -22,6 +23,9 @@ import (
 	"github.com/swaggest/swgui/v5emb"
 	"golang.org/x/sync/errgroup"
 )
+
+//go:embed api/openapi.yaml
+var content embed.FS
 
 func NewGinServer(handler api.ServerInterface, port string) *http.Server {
 	swagger, err := api.GetSwagger()
@@ -42,7 +46,8 @@ func NewGinServer(handler api.ServerInterface, port string) *http.Server {
 	{
 		apiGroup.Any("/*any", gin.WrapH(swUi))
 	}
-	r.StaticFile("/openapi.yaml", "api/openapi.yaml")
+
+	r.StaticFileFS("/openapi.yaml", "api/openapi.yaml", http.FS(content))
 	r.Use(middleware.OapiRequestValidator(swagger))
 
 	api.RegisterHandlers(r, handler)

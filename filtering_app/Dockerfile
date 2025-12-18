@@ -4,11 +4,11 @@ WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download
 COPY ./ ./
-RUN go build -o /kafka-app
+RUN go build -o /output/kafka-app
 
 
 FROM debian:bookworm-20250908
 
-COPY --from=builder /kafka-app /app/kafka-app
+COPY --from=builder /output /app
 
 ENTRYPOINT ["/app/kafka-app"]

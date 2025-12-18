@@ -1,9 +1,9 @@
 # сделать ACL
 
 x-kafka-common-env: &kafka-common-env
-  KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'SSL:SASL_SSL,SSL_INTERNAL:SASL_SSL'
-  KAFKA_LISTENERS: 'SSL://:9093,SSL_INTERNAL://:19093'
-  KAFKA_INTER_BROKER_LISTENER_NAME: 'SSL_INTERNAL'
+  KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'SSL:SASL_SSL'
+  KAFKA_LISTENERS: 'SSL://:19093'
+  KAFKA_INTER_BROKER_LISTENER_NAME: 'SSL'
   KAFKA_SSL_CLIENT_AUTH: 'required'
   KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: https
   KAFKA_LISTENER_NAME_BROKER_SASL_ENABLED_MECHANISMS: PLAIN
@@ -46,7 +46,7 @@ services:
       <<: *kafka-common-env
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_BROKER_ID: 1
-      KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:9093,SSL_INTERNAL://kafka-1:19093'
+      KAFKA_ADVERTISED_LISTENERS: 'SSL://kafka-1:19093'
     networks:
     - yandex-final
 
@@ -60,7 +60,7 @@ services:
       <<: *kafka-common-env
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_BROKER_ID: 2
-      KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:9094,SSL_INTERNAL://kafka-2:19093'
+      KAFKA_ADVERTISED_LISTENERS: 'SSL://kafka-2:19093'
     networks:
     - yandex-final
 
@@ -74,7 +74,7 @@ services:
       <<: *kafka-common-env
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_BROKER_ID: 3
-      KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:9095,SSL_INTERNAL://kafka-3:19093'
+      KAFKA_ADVERTISED_LISTENERS: 'SSL://kafka-3:19093'
     networks:
     - yandex-final
 
@@ -93,61 +93,61 @@ services:
     networks:
     - yandex-final
 
-# zookeeper-mirror:
-#   image: confluentinc/cp-zookeeper:7.4.4
-#   environment:
-#     ZOOKEEPER_CLIENT_PORT: 2181
-#     ZOOKEEPER_TICK_TIME: 2000
-#     KAFKA_OPTS: -Djava.security.auth.login.config=/etc/zookeeper/secrets/zookeeper.sasl.jaas.conf
-#       -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider
-#       -Dzookeeper.allowSaslFailedClients=false
-#       -Dzookeeper.requireClientAuthScheme=sasl
-#   volumes:
-#     - ./_compose_data/zookeeper-creds:/etc/zookeeper/secrets
-#   networks:
-#   - yandex-final
-#
-# kafka-mirror-1:
-#   image: confluentinc/cp-kafka:7.4.4
-#   depends_on:
-#     - zookeeper
-#   volumes:
-#     - ./_compose_data/kafka-creds:/etc/kafka/secrets
-#   environment:
-#     <<: *kafka-common-env
-#     KAFKA_ZOOKEEPER_CONNECT: zookeeper-mirror:2181
-#     KAFKA_BROKER_ID: 1
-#     KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:9093,SSL_INTERNAL://kafka-mirror-1:19093'
-#   networks:
-#   - yandex-final
-#
-# kafka-mirror-2:
-#   image: confluentinc/cp-kafka:7.4.4
-#   depends_on:
-#     - zookeeper
-#   volumes:
-#     - ./_compose_data/kafka-creds:/etc/kafka/secrets
-#   environment:
-#     <<: *kafka-common-env
-#     KAFKA_ZOOKEEPER_CONNECT: zookeeper-mirror:2181
-#     KAFKA_BROKER_ID: 2
-#     KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:9094,SSL_INTERNAL://kafka-mirror-2:19093'
-#   networks:
-#   - yandex-final
-#
-# kafka-mirror-3:
-#   image: confluentinc/cp-kafka:7.4.4
-#   depends_on:
-#     - zookeeper
-#   volumes:
-#     - ./_compose_data/kafka-creds:/etc/kafka/secrets
-#   environment:
-#     <<: *kafka-common-env
-#     KAFKA_ZOOKEEPER_CONNECT: zookeeper-mirror:2181
-#     KAFKA_BROKER_ID: 3
-#     KAFKA_ADVERTISED_LISTENERS: 'SSL://localhost:9095,SSL_INTERNAL://kafka-mirror-3:19093'
-#   networks:
-#   - yandex-final
+  zookeeper-mirror:
+    image: confluentinc/cp-zookeeper:7.4.4
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      KAFKA_OPTS: -Djava.security.auth.login.config=/etc/zookeeper/secrets/zookeeper.sasl.jaas.conf
+        -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider
+        -Dzookeeper.allowSaslFailedClients=false
+        -Dzookeeper.requireClientAuthScheme=sasl
+    volumes:
+      - ./_compose_data/zookeeper-creds:/etc/zookeeper/secrets
+    networks:
+    - yandex-final
+
+  kafka-mirror-1:
+    image: confluentinc/cp-kafka:7.4.4
+    depends_on:
+      - zookeeper
+    volumes:
+      - ./_compose_data/kafka-creds:/etc/kafka/secrets
+    environment:
+      <<: *kafka-common-env
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-mirror:2181
+      KAFKA_BROKER_ID: 1
+      KAFKA_ADVERTISED_LISTENERS: 'SSL://kafka-mirror-1:19093'
+    networks:
+    - yandex-final
+
+  kafka-mirror-2:
+    image: confluentinc/cp-kafka:7.4.4
+    depends_on:
+      - zookeeper
+    volumes:
+      - ./_compose_data/kafka-creds:/etc/kafka/secrets
+    environment:
+      <<: *kafka-common-env
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-mirror:2181
+      KAFKA_BROKER_ID: 2
+      KAFKA_ADVERTISED_LISTENERS: 'SSL://kafka-mirror-2:19093'
+    networks:
+    - yandex-final
+
+  kafka-mirror-3:
+    image: confluentinc/cp-kafka:7.4.4
+    depends_on:
+      - zookeeper
+    volumes:
+      - ./_compose_data/kafka-creds:/etc/kafka/secrets
+    environment:
+      <<: *kafka-common-env
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-mirror:2181
+      KAFKA_BROKER_ID: 3
+      KAFKA_ADVERTISED_LISTENERS: 'SSL://kafka-mirror-3:19093'
+    networks:
+    - yandex-final
 
   schema-registry:
     image: confluentinc/cp-schema-registry:8.1.0
@@ -196,19 +196,19 @@ services:
       KAFKA_CLUSTERS_0_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: '' # DISABLE COMMON NAME VERIFICATION
       KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
       KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
-      #KAFKA_CLUSTERS_1_NAME: kafka-mirror
-      #KAFKA_CLUSTERS_1_SCHEMAREGISTRY: http://schema-registry:8080
-      #KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS: kafka-mirror-1:19093,kafka-mirror-2:19093,kafka-mirror-3:19093
-      #KAFKA_CLUSTERS_1_ZOOKEEPER: zookeeper-mirror:2181
-      #KAFKA_CLUSTERS_1_SSL_TRUSTSTORELOCATION: /kafka.truststore.jks
-      #KAFKA_CLUSTERS_1_SSL_TRUSTSTOREPASSWORD: 'drfgrfdg5324234'
-      #KAFKA_CLUSTERS_1_PROPERTIES_SECURITY_PROTOCOL: SASL_SSL
-      #KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_LOCATION: /kafka.keystore.pkcs12
-      #KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_TYPE: PKCS12
-      #KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_PASSWORD: 'drfgrfdg5324234'
-      #KAFKA_CLUSTERS_1_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: '' # DISABLE COMMON NAME VERIFICATION
-      #KAFKA_CLUSTERS_1_PROPERTIES_SASL_MECHANISM: PLAIN
-      #KAFKA_CLUSTERS_1_PROPERTIES_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
+      KAFKA_CLUSTERS_1_NAME: kafka-mirror
+      KAFKA_CLUSTERS_1_SCHEMAREGISTRY: http://schema-registry:8080
+      KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS: kafka-mirror-1:19093,kafka-mirror-2:19093,kafka-mirror-3:19093
+      KAFKA_CLUSTERS_1_ZOOKEEPER: zookeeper-mirror:2181
+      KAFKA_CLUSTERS_1_SSL_TRUSTSTORELOCATION: /kafka.truststore.jks
+      KAFKA_CLUSTERS_1_SSL_TRUSTSTOREPASSWORD: 'drfgrfdg5324234'
+      KAFKA_CLUSTERS_1_PROPERTIES_SECURITY_PROTOCOL: SASL_SSL
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_LOCATION: /kafka.keystore.pkcs12
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_PASSWORD: 'drfgrfdg5324234'
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: '' # DISABLE COMMON NAME VERIFICATION
+      KAFKA_CLUSTERS_1_PROPERTIES_SASL_MECHANISM: PLAIN
+      KAFKA_CLUSTERS_1_PROPERTIES_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
     volumes:
       - ./_compose_data/kafka-creds/kafka.keystore.pkcs12:/kafka.keystore.pkcs12
       - ./_compose_data/kafka-creds/kafka.truststore.jks:/kafka.truststore.jks
@@ -396,6 +396,12 @@ services:
       CONNECT_CONSUMER_SSL_TRUSTSTORE_PASSWORD: drfgrfdg5324234
       CONNECT_CONSUMER_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
 
+      CONNECT_PRODUCER_SECURITY_PROTOCOL: SASL_SSL
+      CONNECT_PRODUCER_SASL_MECHANISM: PLAIN
+      CONNECT_PRODUCER_SSL_TRUSTSTORE_LOCATION: /etc/kafka-connect/kafka.truststore.jks
+      CONNECT_PRODUCER_SSL_TRUSTSTORE_PASSWORD: drfgrfdg5324234
+      CONNECT_PRODUCER_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
+
       CONNECT_REST_PORT: 8083
       CONNECT_GROUP_ID: 'kafka-connect'
       CONNECT_REST_ADVERTISED_HOST_NAME: 'localhost'
@@ -417,7 +423,6 @@ services:
       CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/jars
     volumes:
       - ./_compose_data/confluent-hub-components/:/etc/kafka-connect/jars
-      - ./_compose_data/kafka-creds/kafka.keystore.pkcs12:/etc/kafka-connect/kafka.keystore.pkcs12
       - ./_compose_data/kafka-creds/kafka.truststore.jks:/etc/kafka-connect/kafka.truststore.jks
     networks:
       - yandex-final
@@ -443,6 +448,23 @@ services:
       ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
     networks:
       - yandex-final
+
+  kafka-connect-init:
+    image: curlimages/curl:8.5.0
+    depends_on:
+      - kafka-connect
+      - elasticsearch
+    volumes:
+      - ./_compose_data/create-connectors.sh:/etc/kconfigurator/create-connectors.sh
+      - ./_compose_data/elastic-sink-connector.json:/etc/kconfigurator/elastic-sink-connector.json
+      - ./_compose_data/mirror-connector.json:/etc/kconfigurator/mirror-connector.json
+    environment:
+      CONNECT_URL: http://kafka-connect:8083
+      ELASTIC_CONFIG_FILE: /etc/kconfigurator/elastic-sink-connector.json
+      MIRROR_CONFIG_FILE: /etc/kconfigurator/mirror-connector.json
+    entrypoint: ["sh", "/etc/kconfigurator/create-connectors.sh"]
+    networks:
+    - yandex-final
 
 configs:
   kibana:
