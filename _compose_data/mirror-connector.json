@@ -3,7 +3,7 @@
     "connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector",
 
     "source.cluster.alias": "mm-connector-source",
-    "topics": "products|products-raw|blocked-products|blocked-products-group-table",
+    "topics": "products|products-raw|blocked-products|blocked-products-group-table|client-actions",
 
     "key.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
     "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",

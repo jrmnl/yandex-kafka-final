@@ -26,6 +26,6 @@ echo "Pushing elastic-sink-connector config"
 curl -sf -X PUT \
   -H "Content-Type: application/json" \
   --data @"$ELASTIC_CONFIG_FILE" \
-  "$ELASTIC_CONFIG_FILE/connectors/elastic-sink-connector/config"
+  "$CONNECT_URL/connectors/elastic-sink-connector/config"
 
 echo "Done."

@@ -1,0 +1,103 @@
+openapi: '3.0.3'
+info:
+  title: Yandex Sprint final SHOP APP
+  version: 1.0.0
+
+paths:
+  /product:
+    get:
+      summary: Получить продукты по имени
+      operationId: getProductsByName
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: Имя продукта
+          schema:
+            type: string
+
+        - name: X-User-Id
+          in: header
+          required: true
+          description: Идентификатор пользователя
+          schema:
+            type: string
+
+      responses:
+        "200":
+          description: Продукт найден
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        product_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          $ref: "#/components/schemas/Price"
+        category:
+          type: string
+        brand:
+          type: string
+        stock:
+          $ref: "#/components/schemas/Stock"
+        sku:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/Image"
+        specifications:
+          type: object
+          additionalProperties:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        index:
+          type: string
+        store_id:
+          type: string
+
+    Price:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: float
+        currency:
+          type: string
+
+    Stock:
+      type: object
+      properties:
+        available:
+          type: integer
+        reserved:
+          type: integer
+
+    Image:
+      type: object
+      properties:
+        url:
+          type: string
+        alt:
+          type: string

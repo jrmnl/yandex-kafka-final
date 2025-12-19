@@ -349,6 +349,31 @@ services:
     networks:
     - yandex-final
 
+  client_app:
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+      - schema-registry
+      - elasticsearch
+      - kafka-init
+    build:
+      context: ./client_app
+    environment:
+      SSL_CA_LOCATION: /etc/client_app/ca.crt
+      BOOTSTRAP_SERVERS: kafka-1:19093,kafka-2:19093,kafka-3:19093
+      REGISTRY: http://schema-registry:8080/
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      TOPIC: client-actions
+      USERNAME: client_app
+      PASSWORD: client_app-secret
+    volumes:
+      - ./_compose_data/ca.crt:/etc/client_app/ca.crt
+    ports:
+    - 8098:8098
+    networks:
+    - yandex-final
+
   filtering_app:
     depends_on:
       - kafka-1

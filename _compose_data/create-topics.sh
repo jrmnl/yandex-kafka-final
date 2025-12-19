@@ -29,6 +29,14 @@ kafka-acls \
   --operation write \
   --topic products-raw
 
+echo "Права для client_app";
+kafka-acls \
+  --bootstrap-server $BROKERS \
+  --command-config /tmp/adminclient-configs.conf \
+  --add --allow-principal User:client_app \
+  --operation write \
+  --topic client-actions
+
 echo "Права для filtering_app";
 kafka-acls \
   --bootstrap-server $BROKERS \
@@ -63,7 +71,7 @@ kafka-acls \
   --topic blocked-products \
   --topic blocked-products-group-table
 
-for TOPIC in products-raw products ; do
+for TOPIC in products-raw products client-actions; do
   echo "Создаем топик $TOPIC";
   kafka-topics --create \
     --command-config /tmp/adminclient-configs.conf \
