@@ -604,7 +604,7 @@ services:
   ksqldb-server:
     image: confluentinc/ksqldb-server:0.29.0
     depends_on:
-      - zookeper-mirror-1
+      - zookeper-mirror
       - kafka-mirror-1
       - kafka-mirror-2
       - kafka-mirror-3
