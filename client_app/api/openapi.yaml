@@ -1,6 +1,6 @@
 openapi: '3.0.3'
 info:
-  title: Yandex Sprint final SHOP APP
+  title: Yandex Sprint final CLIENT APP
   version: 1.0.0
 
 paths:

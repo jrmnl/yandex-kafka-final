@@ -1,6 +1,6 @@
 openapi: '3.0.3'
 info:
-  title: Yandex Sprint 2
+  title: Yandex Sprint final FILTERING APP
   version: '1.0'
 
 paths:
