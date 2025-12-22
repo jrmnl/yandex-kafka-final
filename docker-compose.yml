@@ -1,5 +1,3 @@
-# сделать ACL
-
 x-kafka-common-env: &kafka-common-env
   KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'SSL:SASL_SSL'
   KAFKA_LISTENERS: 'SSL://:19093'
@@ -86,7 +84,6 @@ services:
       - kafka-2
       - kafka-3
     volumes:
-      # для упрощения переиспользую креды первого брокера
       - ./_compose_data/kafka-creds:/etc/kafka/secrets
       - ./_compose_data/create-topics.sh:/create-topics.sh
     entrypoint: [ "sh", "/create-topics.sh" ]
@@ -151,6 +148,7 @@ services:
 
   schema-registry:
     image: confluentinc/cp-schema-registry:8.1.0
+    restart: always
     depends_on:
       - zookeeper
       - kafka-1
@@ -173,7 +171,7 @@ services:
     networks:
     - yandex-final
 
-  ui:
+  kafka-ui:
     image: provectuslabs/kafka-ui:v0.7.2
     depends_on:
       - zookeeper
@@ -209,122 +207,123 @@ services:
       KAFKA_CLUSTERS_1_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: '' # DISABLE COMMON NAME VERIFICATION
       KAFKA_CLUSTERS_1_PROPERTIES_SASL_MECHANISM: PLAIN
       KAFKA_CLUSTERS_1_PROPERTIES_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
+      KAFKA_CLUSTERS_1_KSQLDBSERVER: http://ksqldb-server:8088
     volumes:
       - ./_compose_data/kafka-creds/kafka.keystore.pkcs12:/kafka.keystore.pkcs12
       - ./_compose_data/kafka-creds/kafka.truststore.jks:/kafka.truststore.jks
     networks:
     - yandex-final
-#
-# grafana:
-#   image: "grafana/grafana:latest"
-#   ports:
-#    - "3001:3000"
-#   environment:
-#     GF_PATHS_DATA : /var/lib/grafana
-#     GF_SECURITY_ADMIN_PASSWORD : kafka
-#   volumes:
-#    - ./_compose_data/grafana/provisioning:/etc/grafana/provisioning
-#    - ./_compose_data/grafana/dashboards:/var/lib/grafana/dashboards
-#   depends_on:
-#    - prometheus
-#   networks:
-#     - yandex-final
-#
-# prometheus:
-#   image: "prom/prometheus:latest"
-#   ports:
-#    - "9090:9090"
-#   volumes:
-#    - ./_compose_data/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-#    - ./_compose_data/prometheus/alert.rules:/etc/prometheus/alert.rules
-#   command: "--config.file=/etc/prometheus/prometheus.yml"
-#   networks:
-#     - yandex-final
-#
-# alertmanager:
-#   image: prom/alertmanager:v0.21.0
-#   volumes:
-#     - ./_compose_data/alertmanager/config.yml:/etc/alertmanager/config.yml
-#   command:
-#     - '--config.file=/etc/alertmanager/config.yml'
-#     - '--storage.path=/alertmanager'
-#     - '--log.level=debug'
-#   ports:
-#     - 9093:9093
-#   networks:
-#     - yandex-final
-#
-# jmx-kafka-1:
-#   image: sscaling/jmx-prometheus-exporter
-#   depends_on:
-#    - kafka-1
-#   environment:
-#    CONFIG_YML : /etc/jmx_exporter/config.yml
-#    JVM_OPTS: -Xmx128M
-#   volumes:
-#    - ./_compose_data/jmx_exporter/config_kafka-1.yml:/etc/jmx_exporter/config.yml
-#   networks:
-#     - yandex-final
-#
-# jmx-kafka-2:
-#   image: sscaling/jmx-prometheus-exporter
-#   depends_on:
-#    - kafka-2
-#   environment:
-#    CONFIG_YML : /etc/jmx_exporter/config.yml
-#    JVM_OPTS: -Xmx128M
-#   volumes:
-#    - ./_compose_data/jmx_exporter/config_kafka-2.yml:/etc/jmx_exporter/config.yml
-#   networks:
-#     - yandex-final
-#
-# jmx-kafka-3:
-#   image: sscaling/jmx-prometheus-exporter
-#   depends_on:
-#    - kafka-3
-#   environment:
-#    CONFIG_YML : /etc/jmx_exporter/config.yml
-#    JVM_OPTS: -Xmx128M
-#   volumes:
-#    - ./_compose_data/jmx_exporter/config_kafka-3.yml:/etc/jmx_exporter/config.yml
-#   networks:
-#     - yandex-final
-#
-# jmx-kafka-mirror-1:
-#   image: sscaling/jmx-prometheus-exporter
-#   depends_on:
-#    - kafka-mirror-1
-#   environment:
-#    CONFIG_YML : /etc/jmx_exporter/config.yml
-#    JVM_OPTS: -Xmx128M
-#   volumes:
-#    - ./_compose_data/jmx_exporter/config_kafka-mirror-1.yml:/etc/jmx_exporter/config.yml
-#   networks:
-#     - yandex-final
-#
-# jmx-kafka-mirror-2:
-#   image: sscaling/jmx-prometheus-exporter
-#   depends_on:
-#    - kafka-mirror-2
-#   environment:
-#    CONFIG_YML : /etc/jmx_exporter/config.yml
-#    JVM_OPTS: -Xmx128M
-#   volumes:
-#    - ./_compose_data/jmx_exporter/config_kafka-mirror-2.yml:/etc/jmx_exporter/config.yml
-#   networks:
-#     - yandex-final
-#
-# jmx-kafka-mirror-3:
-#   image: sscaling/jmx-prometheus-exporter
-#   depends_on:
-#    - kafka-3
-#   environment:
-#    CONFIG_YML : /etc/jmx_exporter/config.yml
-#    JVM_OPTS: -Xmx128M
-#   volumes:
-#    - ./_compose_data/jmx_exporter/config_kafka-mirror-3.yml:/etc/jmx_exporter/config.yml
-#   networks:
-#     - yandex-final
+ 
+  grafana:
+    image: "grafana/grafana:latest"
+    ports:
+     - "3001:3000"
+    environment:
+      GF_PATHS_DATA : /var/lib/grafana
+      GF_SECURITY_ADMIN_PASSWORD : kafka
+    volumes:
+     - ./_compose_data/grafana/provisioning:/etc/grafana/provisioning
+     - ./_compose_data/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+     - prometheus
+    networks:
+      - yandex-final
+ 
+  prometheus:
+    image: "prom/prometheus:latest"
+    ports:
+     - "9090:9090"
+    volumes:
+     - ./_compose_data/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+     - ./_compose_data/prometheus/alert.rules:/etc/prometheus/alert.rules
+    command: "--config.file=/etc/prometheus/prometheus.yml"
+    networks:
+      - yandex-final
+
+  alertmanager:
+    image: prom/alertmanager:v0.21.0
+    volumes:
+      - ./_compose_data/alertmanager/config.yml:/etc/alertmanager/config.yml
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+      - '--log.level=debug'
+    ports:
+      - 9093:9093
+    networks:
+      - yandex-final
+
+  jmx-kafka-1:
+    image: sscaling/jmx-prometheus-exporter
+    depends_on:
+     - kafka-1
+    environment:
+     CONFIG_YML : /etc/jmx_exporter/config.yml
+     JVM_OPTS: -Xmx128M
+    volumes:
+     - ./_compose_data/jmx_exporter/config_kafka-1.yml:/etc/jmx_exporter/config.yml
+    networks:
+      - yandex-final
+
+  jmx-kafka-2:
+    image: sscaling/jmx-prometheus-exporter
+    depends_on:
+     - kafka-2
+    environment:
+     CONFIG_YML : /etc/jmx_exporter/config.yml
+     JVM_OPTS: -Xmx128M
+    volumes:
+     - ./_compose_data/jmx_exporter/config_kafka-2.yml:/etc/jmx_exporter/config.yml
+    networks:
+      - yandex-final
+
+  jmx-kafka-3:
+    image: sscaling/jmx-prometheus-exporter
+    depends_on:
+     - kafka-3
+    environment:
+     CONFIG_YML : /etc/jmx_exporter/config.yml
+     JVM_OPTS: -Xmx128M
+    volumes:
+     - ./_compose_data/jmx_exporter/config_kafka-3.yml:/etc/jmx_exporter/config.yml
+    networks:
+      - yandex-final
+
+  jmx-kafka-mirror-1:
+    image: sscaling/jmx-prometheus-exporter
+    depends_on:
+     - kafka-mirror-1
+    environment:
+     CONFIG_YML : /etc/jmx_exporter/config.yml
+     JVM_OPTS: -Xmx128M
+    volumes:
+     - ./_compose_data/jmx_exporter/config_kafka-mirror-1.yml:/etc/jmx_exporter/config.yml
+    networks:
+      - yandex-final
+
+  jmx-kafka-mirror-2:
+    image: sscaling/jmx-prometheus-exporter
+    depends_on:
+     - kafka-mirror-2
+    environment:
+     CONFIG_YML : /etc/jmx_exporter/config.yml
+     JVM_OPTS: -Xmx128M
+    volumes:
+     - ./_compose_data/jmx_exporter/config_kafka-mirror-2.yml:/etc/jmx_exporter/config.yml
+    networks:
+      - yandex-final
+
+  jmx-kafka-mirror-3:
+    image: sscaling/jmx-prometheus-exporter
+    depends_on:
+     - kafka-3
+    environment:
+     CONFIG_YML : /etc/jmx_exporter/config.yml
+     JVM_OPTS: -Xmx128M
+    volumes:
+     - ./_compose_data/jmx_exporter/config_kafka-mirror-3.yml:/etc/jmx_exporter/config.yml
+    networks:
+      - yandex-final
 
   shop_app:
     depends_on:
@@ -447,7 +446,65 @@ services:
       # Пути к плагинам
       CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/jars
     volumes:
-      - ./_compose_data/confluent-hub-components/:/etc/kafka-connect/jars
+      - ./_compose_data/confluent-hub-components/main/:/etc/kafka-connect/jars
+      - ./_compose_data/kafka-creds/kafka.truststore.jks:/etc/kafka-connect/kafka.truststore.jks
+    networks:
+      - yandex-final
+
+  kafka-connect-mirror:
+    build:
+      context: ./_compose_data/kafka-connect
+    user: "root"
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+      - schema-registry
+    ports:
+      - 8084:8083
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: kafka-mirror-1:19093,kafka-mirror-2:19093,kafka-mirror-3:19093
+
+      CONNECT_SECURITY_PROTOCOL: SASL_SSL
+      CONNECT_SASL_MECHANISM: PLAIN
+      CONNECT_SSL_TRUSTSTORE_LOCATION: /etc/kafka-connect/kafka.truststore.jks
+      CONNECT_SSL_TRUSTSTORE_PASSWORD: drfgrfdg5324234
+      CONNECT_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
+
+      CONNECT_CONSUMER_SECURITY_PROTOCOL: SASL_SSL
+      CONNECT_CONSUMER_SASL_MECHANISM: PLAIN
+      CONNECT_CONSUMER_SSL_TRUSTSTORE_LOCATION: /etc/kafka-connect/kafka.truststore.jks
+      CONNECT_CONSUMER_SSL_TRUSTSTORE_PASSWORD: drfgrfdg5324234
+      CONNECT_CONSUMER_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
+
+      CONNECT_PRODUCER_SECURITY_PROTOCOL: SASL_SSL
+      CONNECT_PRODUCER_SASL_MECHANISM: PLAIN
+      CONNECT_PRODUCER_SSL_TRUSTSTORE_LOCATION: /etc/kafka-connect/kafka.truststore.jks
+      CONNECT_PRODUCER_SSL_TRUSTSTORE_PASSWORD: drfgrfdg5324234
+      CONNECT_PRODUCER_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
+
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: 'kafka-connect-mirror'
+      CONNECT_REST_ADVERTISED_HOST_NAME: 'localhost'
+
+      # Хранение конфигурации, смещений и статусов
+      CONNECT_CONFIG_STORAGE_TOPIC: 'connect-mirror-config-storage'
+      CONNECT_OFFSET_STORAGE_TOPIC: 'connect-mirror-offset-storage'
+      CONNECT_STATUS_STORAGE_TOPIC: 'connect-mirror-status-storage'
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+
+      # Конвертеры
+      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+      CONNECT_VALUE_CONVERTER: "io.confluent.connect.avro.AvroConverter"
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry:8080'
+      CONNECT_SCHEMA_REGISTRY_URL: 'http://schema-registry:8080'
+
+      # Пути к плагинам
+      CONNECT_PLUGIN_PATH: /usr/share/java,/etc/kafka-connect/jars
+    volumes:
+      - ./_compose_data/confluent-hub-components/mirror/:/etc/kafka-connect/jars
       - ./_compose_data/kafka-creds/kafka.truststore.jks:/etc/kafka-connect/kafka.truststore.jks
     networks:
       - yandex-final
@@ -478,18 +535,112 @@ services:
     image: curlimages/curl:8.5.0
     depends_on:
       - kafka-connect
+      - kafka-connect-mirror
       - elasticsearch
+      - hadoop-namenode
     volumes:
-      - ./_compose_data/create-connectors.sh:/etc/kconfigurator/create-connectors.sh
-      - ./_compose_data/elastic-sink-connector.json:/etc/kconfigurator/elastic-sink-connector.json
-      - ./_compose_data/mirror-connector.json:/etc/kconfigurator/mirror-connector.json
+      - ./_compose_data/create-connectors.sh:/create-connectors.sh
+      - ./_compose_data/elastic-sink-connector.json:/elastic-sink-connector.json
+      - ./_compose_data/mirror-connector.json:/mirror-connector.json
+      - ./_compose_data/hdfs-sink-connector.json:/hdfs-sink-connector.json
     environment:
       CONNECT_URL: http://kafka-connect:8083
-      ELASTIC_CONFIG_FILE: /etc/kconfigurator/elastic-sink-connector.json
-      MIRROR_CONFIG_FILE: /etc/kconfigurator/mirror-connector.json
-    entrypoint: ["sh", "/etc/kconfigurator/create-connectors.sh"]
+      CONNECT_MIRROR_URL: http://kafka-connect-mirror:8083
+      ELASTIC_CONFIG_FILE: /elastic-sink-connector.json
+      MIRROR_CONFIG_FILE: /mirror-connector.json
+      HDFS_CONFIG_FILE: /hdfs-sink-connector.json
+    entrypoint: ["sh", "/create-connectors.sh"]
     networks:
     - yandex-final
+
+  hadoop-namenode:
+    image: apache/hadoop:3.4.1
+    user: "root"
+    restart: always
+    platform: linux/amd64
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"   # Ограничение использования CPU
+          memory: "2g"  # Ограничение использования RAM
+    shm_size: 10G
+    ports:
+      - "9870:9870"  # HTTP-порт для Web UI HDFS NameNode
+      - "9000:9000"  # RPC порт для запросов к NameNode
+    volumes:
+      - ./_compose_data/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
+      - ./_compose_data/hadoop/hdfs-site-namenode.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
+      - ./_compose_data/hadoop/namenode_entrypoint.sh:/namenode_entrypoint.sh
+    entrypoint: ["/bin/bash", "/namenode_entrypoint.sh"]
+    command: ["hdfs", "namenode"]
+    networks:
+    - yandex-final
+
+  hadoop-datanode-1:
+    image: apache/hadoop:3.4.1
+    user: "root"
+    restart: always
+    platform: linux/amd64
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"   # Ограничение использования CPU
+          memory: "2g"  # Ограничение использования RAM
+    shm_size: 10G
+    depends_on:
+      - hadoop-namenode
+    ports:
+      - "9864:9864"  # HTTP-порт для Web UI DataNode №1
+      - "9970:9970"  # RPC порт для запросов от NameNode
+    volumes:
+      - ./_compose_data/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml
+      - ./_compose_data/hadoop/hdfs-site-datanode-1.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml
+      - ./_compose_data/hadoop/datanode_entrypoint.sh:/datanode_entrypoint.sh
+    entrypoint: ["/bin/bash", "/datanode_entrypoint.sh"]
+    command: ["hdfs", "datanode"]
+    networks:
+    - yandex-final
+
+  ksqldb-server:
+    image: confluentinc/ksqldb-server:0.29.0
+    depends_on:
+      - zookeper-mirror-1
+      - kafka-mirror-1
+      - kafka-mirror-2
+      - kafka-mirror-3
+      - schema-registry
+    environment:
+      KSQL_BOOTSTRAP_SERVERS: kafka-mirror-1:19093,kafka-mirror-2:19093,kafka-mirror-3:19093
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: http://schema-registry:8080
+      KSQL_SASL_MECHANISM: PLAIN
+      KSQL_SECURITY_PROTOCOL: SASL_SSL
+      KSQL_SASL_JAAS_CONFIG: >
+        org.apache.kafka.common.security.plain.PlainLoginModule required
+        username="admin"
+        password="admin-secret";
+      KSQL_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.truststore.jks
+      KSQL_SSL_TRUSTSTORE_PASSWORD: drfgrfdg5324234
+    volumes:
+      - ./_compose_data/kafka-creds/kafka.truststore.jks:/etc/kafka/secrets/kafka.truststore.jks
+    ports:
+      - "8088:8088"
+    networks:
+      - yandex-final
+
+  ksqldb-init:
+    image: confluentinc/cp-ksqldb-cli:8.0.2
+    depends_on:
+      - ksqldb-server
+    volumes:
+      - ./_compose_data/ksql-init.sh:/ksql-init.sh
+      - ./_compose_data/ksql-init.sql:/ksql-init.sql
+    entrypoint: ["/bin/bash", "/ksql-init.sh"]
+    networks:
+      - yandex-final
+
+networks:
+  yandex-final:
+    external: true
 
 configs:
   kibana:
@@ -498,51 +649,3 @@ configs:
       elasticsearch.hosts: ["http://elasticsearch:9200"]
       elasticsearch.username: "elastic"
       elasticsearch.password: "admin"
-
-
-  #postgres:
-  #  image: postgres:17.6
-  #  environment:
-  #    POSTGRES_USER: admin
-  #    POSTGRES_PASSWORD: admin
-  #    POSTGRES_DB: products
-  #  ports:
-  #    - 5432:5432
-  #  networks:
-  #    - yandex-final
-#
-  #pgadmin:
-  #  image: dpage/pgadmin4:9.8.0
-  #  depends_on:
-  #    - postgres
-  #  environment:
-  #    PGADMIN_DEFAULT_EMAIL: admin@admin.com
-  #    PGADMIN_DEFAULT_PASSWORD: admin
-  #  ports:
-  #    - 8050:80
-  #  configs:
-  #    - source: pgadmin_servers
-  #      target: /pgadmin4/servers.json
-  #  networks:
-  #    - yandex-final
-
-networks:
-  yandex-final:
-    external: true
-
-#configs:
-#  pgadmin_servers:
-#    content: |
-#      {
-#        "Servers": {
-#          "database": {
-#            "Name": "database",
-#            "Group": "Servers",
-#            "Host": "postgres",
-#            "Port": 5432,
-#            "MaintenanceDB": "products",
-#            "Username": "admin",
-#            "Password": "admin"
-#          }
-#        }
-#      }

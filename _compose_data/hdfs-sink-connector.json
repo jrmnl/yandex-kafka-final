@@ -1,0 +1,12 @@
+{
+  "name": "hdfs-sink-connector",
+  "connector.class": "io.confluent.connect.hdfs.HdfsSinkConnector",
+  "topics": "blocked-products,blocked-products-group-table,client-actions,products,products-raw",
+  "connection.url": "hdfs://hadoop-namenode:9000",
+  "store.url": "hdfs://hadoop-namenode:9000/data",
+  "flush.size": "3",
+  "rotate.interval.ms": "60000",
+  "value.converter": "io.confluent.connect.avro.AvroConverter",
+  "value.converter.schema.registry.url": "http://schema-registry:8080",
+  "format.class": "io.confluent.connect.hdfs.avro.AvroFormat"
+}
