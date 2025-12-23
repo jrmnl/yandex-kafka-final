@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -22,7 +23,7 @@ func NewApiHandler(es *elasticsearch.Client, actions chan UserAction) *ApiHandle
 }
 
 // (GET /product)
-func (h *ApiHandler) GetProductByName(c *gin.Context, params api.GetProductByNameParams) {
+func (h *ApiHandler) GetProductsByName(c *gin.Context, params api.GetProductsByNameParams) {
 	res, err := h.query(c.Request.Context(), params.Name)
 	h.actions <- UserAction{
 		UserId:              params.XUserId,
@@ -34,6 +35,40 @@ func (h *ApiHandler) GetProductByName(c *gin.Context, params api.GetProductByNam
 		return
 	}
 	c.JSON(http.StatusOK, res)
+}
+
+// (GET /recommendations)
+func (h *ApiHandler) GetRecommendations(c *gin.Context, params api.GetRecommendationsParams) {
+	query := fmt.Sprintf(`
+	{
+    	"ksql" :"SELECT PRODUCTS FROM USERS_RECOMENDATIONS WHERE user_id = '%s';"
+	}`,
+		params.XUserId)
+
+	url := "http://ksqldb-server:8088/query"
+	resp, err := http.Post(
+		url,
+		"application/json",
+		bytes.NewBufferString(query),
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	var response []KsqlResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if len(response) > 1 {
+		er := response[1].Row.Columns[0]
+		c.JSON(http.StatusOK, er)
+	} else {
+		c.JSON(http.StatusNotFound, "рекомендации не найдены")
+	}
 }
 
 func (h *ApiHandler) query(ctx context.Context, name string) (*[]Product, error) {
@@ -73,3 +108,21 @@ type Hits struct {
 type Hit struct {
 	Source Product `json:"_source"`
 }
+
+type KsqlResponse struct {
+	Row KsqlRow `json:"row"`
+}
+
+type KsqlRow struct {
+	Columns [][]string `json:"columns"`
+}
+
+/*
+type KsqlResponse struct {
+
+row (object): A single row being returned. This will be null if an error is being returned.
+
+row.columns (array): The values of the columns requested. The schema of the columns was already supplied in header.schema.
+
+row.tombstone (boolean): Whether the row is a deletion of a previous row. It is recommended that you include all columns within the primary key in the projection so that you can determine which previous row was deleted.
+*/

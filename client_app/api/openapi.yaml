@@ -32,6 +32,27 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Product"
+  /recommendations:
+    get:
+      summary: Получить рекомендации для пользователя
+      operationId: getRecommendations
+      parameters:
+        - name: X-User-Id
+          in: header
+          required: true
+          description: Идентификатор пользователя
+          schema:
+            type: string
+
+      responses:
+        "201":
+          description: Список рекомендованных товаров
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
 
 components:
   schemas:

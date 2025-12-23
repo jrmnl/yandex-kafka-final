@@ -220,7 +220,7 @@ services:
      - "3001:3000"
     environment:
       GF_PATHS_DATA : /var/lib/grafana
-      GF_SECURITY_ADMIN_PASSWORD : kafka
+      GF_SECURITY_ADMIN_PASSWORD : admin
     volumes:
      - ./_compose_data/grafana/provisioning:/etc/grafana/provisioning
      - ./_compose_data/grafana/dashboards:/var/lib/grafana/dashboards

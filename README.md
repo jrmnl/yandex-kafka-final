@@ -1,40 +1,111 @@
 # yandex-kafka-final
 
-Схема проекта
-TODO
+## Схема проекта
+![Схема проекта](c4.png)
 
-Как запустить проект:
+## Компоненты
+
+- основной кафка кластер (включен SASL_SSL PLAIN)
+  - zookeeper
+  - kafka-1
+  - kafka-2
+  - kafka-3
+
+- зеркало кафки кластер (включен SASL_SSL PLAIN)
+  - zookeeper-mirror
+  - kafka-mirror-1
+  - kafka-mirror-2
+  - kafka-mirror-3
+
+- интерфейс для кафки
+  - kafka-ui
+
+- реестр схем
+  - schema-registry (хранит схемы в основной кафки)
+
+- система для аналитики и рекомендаций
+  - ksqldb-server (рекомендует товары, котоыре прольтзователь еще не смотрел. [см скрипты](./_compose_data/ksql-init.sql))
+
+- коннекторы
+  - kafka-connect (смотрит на основную кафку, для [elastic-sink-connector](./_compose_data/elastic-sink-connector.json))
+  - kafka-connect-mirror (смотрит на зеркало кафки, для [hdfs-sink-connector](./_compose_data/hdfs-sink-connector.json) и [mirror-connector](./_compose_data/mirror-connector.json))
+
+- мониторинг и алертинг
+  - jmx-kafka-1 (для каждого брокера в основном кластере)
+  - jmx-kafka-2
+  - jmx-kafka-3
+  - jmx-kafka-mirror-1 (для каждого брокера в зеркале кластера)
+  - jmx-kafka-mirror-2
+  - jmx-kafka-mirror-3
+  - prometheus
+  - kibana
+  - grafana
+  - alertmanager (настроена интеграция с телеграм)
+
+- консольное приложение для выгрузки данных от магазинов из файла
+  - shop_app
+
+- консольное приложение для потоковой обработки заблокированных товаров и API для блокирования товаров. Сделано с помощью goka
+  - filtering_app
+
+- API для просмотра товаров и рекомендаций. За товарами идет в эластик, за рекомендациями в ksqldb
+  - client_app
+
+- БД для хранения данных по продуктам
+  - elasticsearch
+
+- hadoop, пытался сделать сначал спарк, но не получалось на java писать. оставил т.к. получилось перенести данные из кафка в хадуп и решил не удалять, чтобы не зря сделал
+  - hadoop-datanode-1
+  - hadoop-namenode
+
+- инциилизирующие приложения
+  - kafka-init (выдает права и создает топики)
+  - kafka-connect-init (добавляет коннекторы)
+  - ksqldb-init (создаем потоки и таблицы)
+
+## Как запустить проект:
 
 ```
 docker compose up -d
 ```
 
+## Проверяем работоспособность
 ### 1. Как проверить блокирование продуктов
 
-1. Откройте (filtering_app)[http://localhost:8099/api/docs], если не открывается значит приложение еще инцииализируется, нужно попытаться еще раз попозже. Что приложение инциализируется можно проверить в логах приложения `filtering_app`.
+1. Откройте [filtering_app](http://localhost:8099/api/docs), если не открывается значит приложение еще инцииализируется, нужно попытаться еще раз попозже. Что приложение инциализируется можно проверить в логах приложения `filtering_app`.
 2. В ручке `PUT blocked-products/{productId}` введите productId `20001` и выполните
-3. Найдите файл (data_rest.json)[./_compose_data/data_rest.json] скопируйте содержимое и заменить им содержимое (data.json)[./_compose_data/data.json]
-3. Откройте (client_app)[http://localhost:8098/api/docs], если не открывается значит приложение еще инцииализируется, нужно попытаться еще раз попозже. Что приложение инциализируется можно проверить в логах приложения `filtering_app`.
-2. В ручке PUT blocked-products/{productId} введите 20001, и выполните
+3. Найдите файл [data_rest.json](./_compose_data/data_rest.json) скопируйте содержимое и заменить им содержимое [data.json](./_compose_data/data.json) и сохраните файл
+4. Запустить контейнер `shop_app` еще раз, он загрузит новые данные в кафку
+5. Откройте [kafka-ui](http://localhost:8080/ui/clusters/kafka/all-topics/products/messages), там не будет продукта с ключом `20001`, тем временем в топике [products-raw](http://localhost:8080/ui/clusters/kafka/all-topics/products-raw/messages) он будет
 
-В файле README.md: 
-Напишите инструкцию по запуску.
-Опишите, какие инструменты использовали.
-Поясните реализацию.
-Критерии выполненной работы
-Kafka успешно передаёт данные между сервисами
-Включена защита TLS, и работают ACL (ограничение доступа к топикам)
-Реализована репликация топиков и задано минимальное число реплик
-Настроено дублирование данных во второй Kafka-кластер
-Выполнена фильтрация запрещенных товаров
-Данные после фильтрации записываются в систему хранения
-Реализована аналитическая обработка данных
-Рекомендации записываются в отдельный топик Kafka
-Настроен мониторинг
-дашборд Grafana отображает ключевые метрики
-Alertmanager отправляет оповещения при сбоях
-метрики собираются через Prometheus и JMX Exporter;
-Документация оформлена:
-есть файл README.md с инструкцией по запуску
-перечислены использованные технологии
-описана архитектура и логика реализации проекта
+### 2. Проверяем получение данных
+1. Откройте [client_app](http://localhost:8098/api/docs)
+2. В ручке `GET product` введите name `Наушники AirBeat Pro` и любой X-User-Id латиницей
+3. Придет ответ с данными по продукту
+
+### 3. Проверяем получение рекомендаций
+1. Откройте [client_app](http://localhost:8098/api/docs)
+2. В ручке `GET recommendations` вставьте X-User-Id,который вводили в `GET product`
+3. Будут выданы рекомендации: все продукты, которые пользователь еще не искал
+4. Так же рекомендации можно посмотреть в топике [USERS_RECOMENDATIONS](http://localhost:8080/ui/clusters/kafka-mirror/all-topics/USERS_RECOMENDATIONS/messages)
+
+### 4. Проверяем копирование данных в Hadoop
+1. Во [hadoop file explorer](http://localhost:9870/explorer.html#/data/topics) смотрим что загрузились данные топиков `products`, `products-raw`, `blocked-products`, `blocked-products-group-table`, `client-actions`
+
+### 5. Проверяем мониторинг
+1. Заходим в [grafana](http://localhost:3001/dashboards)
+2. Креды admin / admin
+3. На предложение о смене пароля жмем `skip`
+4. Видно [дэшборды](http://localhost:3001/dashboards)
+5. дэшборды настроены на 2 кластера (env): `cluster-kafka` и `cluster-kafka-mirror`
+
+### 6. Проверяем алерты
+1. Заходим в [alertmanager](http://localhost:9093/#/alerts)
+2. Во второй вкладке открываем [алерты прометеуса](http://localhost:9090/alerts)
+3. Выключаем в докере все 3 брокера `kafka` или `kafka-mirror`
+4. Ждем когда [алерт прометеуса](http://localhost:9090/alerts) станет `pending` (F5 страницы)
+5. Ждем еще 2 минуты
+6. [Алерт прометеуса](http://localhost:9090/alerts) станет `firing`
+7. В [alertmanager](http://localhost:9093/#/alerts) увидим, что появился алерт, можно развернуть подробнее на кнопке `Info`
+8. Мне придет в телеграм алерт :)
+9. Включаем брокеры обратно для дальнешей работы

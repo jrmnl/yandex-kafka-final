@@ -56,8 +56,8 @@ type Stock struct {
 	Reserved  *int `json:"reserved,omitempty"`
 }
 
-// GetProductByNameParams defines parameters for GetProductByName.
-type GetProductByNameParams struct {
+// GetProductsByNameParams defines parameters for GetProductsByName.
+type GetProductsByNameParams struct {
 	// Name Имя продукта
 	Name string `form:"name" json:"name"`
 
@@ -65,11 +65,20 @@ type GetProductByNameParams struct {
 	XUserId string `json:"X-User-Id"`
 }
 
+// GetRecommendationsParams defines parameters for GetRecommendations.
+type GetRecommendationsParams struct {
+	// XUserId Идентификатор пользователя
+	XUserId string `json:"X-User-Id"`
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Получить продукт по имени
+	// Получить продукты по имени
 	// (GET /product)
-	GetProductByName(c *gin.Context, params GetProductByNameParams)
+	GetProductsByName(c *gin.Context, params GetProductsByNameParams)
+	// Получить рекомендации для пользователя
+	// (GET /recommendations)
+	GetRecommendations(c *gin.Context, params GetRecommendationsParams)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -81,13 +90,13 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(c *gin.Context)
 
-// GetProductByName operation middleware
-func (siw *ServerInterfaceWrapper) GetProductByName(c *gin.Context) {
+// GetProductsByName operation middleware
+func (siw *ServerInterfaceWrapper) GetProductsByName(c *gin.Context) {
 
 	var err error
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params GetProductByNameParams
+	var params GetProductsByNameParams
 
 	// ------------- Required query parameter "name" -------------
 
@@ -135,7 +144,49 @@ func (siw *ServerInterfaceWrapper) GetProductByName(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetProductByName(c, params)
+	siw.Handler.GetProductsByName(c, params)
+}
+
+// GetRecommendations operation middleware
+func (siw *ServerInterfaceWrapper) GetRecommendations(c *gin.Context) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRecommendationsParams
+
+	headers := c.Request.Header
+
+	// ------------- Required header parameter "X-User-Id" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-User-Id")]; found {
+		var XUserId string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandler(c, fmt.Errorf("Expected one value for X-User-Id, got %d", n), http.StatusBadRequest)
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-User-Id", valueList[0], &XUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true})
+		if err != nil {
+			siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter X-User-Id: %w", err), http.StatusBadRequest)
+			return
+		}
+
+		params.XUserId = XUserId
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Header parameter X-User-Id is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRecommendations(c, params)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -165,24 +216,26 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.GET(options.BaseURL+"/product", wrapper.GetProductByName)
+	router.GET(options.BaseURL+"/product", wrapper.GetProductsByName)
+	router.GET(options.BaseURL+"/recommendations", wrapper.GetRecommendations)
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"H4sIAAAAAAAC/8xUy27jNhT9FYHt0rGdZqddWxSFgSIwmhZoURQBLV07TCSSoahgjEBAxpnHIgGynV0w",
+	"f2AEDkbjxM4vXP7RgJQdxbY8TmY1K0rk5X2cc3hOSSBiKThwnRD/lCTBAcTUfbZi2gP7IZWQoDQDt00j",
+	"bRfdl0B8kmjFeI9kNZKqqGI/q813ROcQAm0j24oFVYljkXKXuytUTDXxSTcSVJPHFDyNO6BsiiBVCnjQ",
+	"f3ZFEaaBXq3ZUZSHleMEVENPqH71oQKqIdyni+2GVMOWZjGULZd3QkgCxaRmglfmZBZu1xTTELuPHxV0",
+	"iU9+aJQcNWYENQp2ymGpUrTv8vAQXlVW4DSGygM5J+RrBQvWXLQDc59VA5ccpdX7EgLWZQG1CBSEhyGz",
+	"PzRqL5CycnWFz0SL4GhTw3suqIhWsK5dTXuLoK+r/ghwKsMXkl81wt58hKVHcEJZRDvRU6IY19ArdK8g",
+	"AXUCYdXpapXMyaErXDTTNin5l1p9eHtSMa69LuM08n79o/Xb7l/ez+02qZETUInTKNmuN+tNW1VI4FQy",
+	"4pOderO+Q2pEUn3g+m3I8mn1wC12HEdyKyQ++R307PUlv/R3qYNHUkVj0KAS4v93uvgyCH7Ae3Pl4YM5",
+	"wymOzDmOzQCHxI5CfHKcguqTuZiLxeJynDJlcdEqhdrMxirdoaLeCG9xYgaYmzeY4xiHZoBTc+bhA07x",
+	"zlziJ5zijdu+xTtzNe/lAGgIqmzmn62/E1BbrfBFHf3vaJWCJ4UEfmo27RIIrqHwQyplNHs4jcOk8I8y",
+	"37PsYu6AK3rOlq2J4PVT5D2c4BA/Fxg5kSVpHFNrjASvHT7n5j3mZmAul0gzFw5BD3O8t7cxd/cbCgIR",
+	"x8DD0grWSefPpdDN2vneuNz+Ni43uFAFax/xAXPzGqc49swZ3uIYpzPcR8XIOMGJuTBvPQuJw8CSdbOJ",
+	"1JVkQ/MOc8w9HFkA1yObZVn2JQAA//8nrK9kYAgAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

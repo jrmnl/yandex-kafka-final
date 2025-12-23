@@ -1,0 +1,89 @@
+@startuml system context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+AddRelTag("schema", $textColor="orange", $lineColor="orange", $lineStyle = DashedLine())
+AddRelTag("metrics", $textColor="green", $lineColor="green", $lineStyle = DashedLine())
+
+Person_Ext(client, "Клиент")
+Person(admin, "Админ")
+System_Ext(shop, "Приложение магазина")
+System_Ext(analytics, "отдел аналитики")
+System_Ext(telegram, "Телеграм")
+
+
+Container(shop_app, "SHOP_APP", "go", "Handles all business logic")
+Container(client_app, "CLIENT_APP", "go", "Приложения для просмотра сведений о товарах и рекомендациях")
+Container(filtering_app, "FILTERING_APP", "go, goka", "Handles all business logic")
+Container(elastic, "elasticsearch", "elasticsearch", "хранит сведения о товарах")
+Container(ksqldb, "ksqldb", "ksqldb", "делаем рекомендации")
+Container(connect, "kafka-connect", "kafka-connect", "коннекторы к кафке")
+Container(connect_m, "kafka-connect-mirror", "kafka-connect", "коннекторы к кафке для зеркала кафки")
+Container(hadoop, "hadoop", "hadoop", "хранит данные для аналитики")
+Container(registry, "schema-registry", "schema-registry", "следжит за схемами и их версиями")
+Container(jmx, "jmx экспортеры", "", "собирают метрики")
+Container(prometheus, "prometheus", "", "хранит метрики и создает алерты")
+Container(alertamanager, "alertamanager", "", "отправляет алерты")
+Container(grafana, "grafana", "", "отображает метрики")
+
+Boundary(cluster, "Кластер кафки"){
+  Container(zookeeper, "zookeeper")
+  Container(kafka_1, "kafka-1")
+  Container(kafka_2, "kafka-2")
+  Container(kafka_3, "kafka-3")
+}
+
+
+Boundary(cluster_m, "Зеркало кафки"){
+  Container(zookeeper_m, "zookeeper")
+  Container(kafka_m_1, "kafka-1")
+  Container(kafka_m_2, "kafka-2")
+  Container(kafka_m_3, "kafka-3")
+}
+
+Rel(shop, shop_app, "Сохранение данных о продуктах")
+
+Rel(shop_app, cluster, "Сохранение данных о продуктах в топик products-raw")
+
+Rel(admin, filtering_app, "Блокирует продукты")
+Rel(filtering_app, cluster, "Фильтрация из products-raw в products на основе blocked_products")
+
+Rel(client, client_app, "Получение сведений о товаре и рекомендации")
+Rel(client_app, elastic, "Получение сведений о товаре")
+Rel(client_app, ksqldb, "Получение рекомендаций")
+
+Rel(ksqldb, cluster_m, "Чтение топиков для рекомендаций")
+Rel(connect, cluster, "Получение данных из топика products (elastic-sink-connector)")
+Rel(connect, elastic, "Сохранение данных в elastic (elastic-sink-connector)")
+
+Rel(connect_m, cluster, "Получение данных для дублирования (mirror-connector)")
+Rel(connect_m, cluster_m, "Сохранение топиков и сообщений в зеркало (mirror-connector)")
+
+Rel(connect_m, cluster_m, "Получение данных для сохранения в hadoop (hdfs-sink-connector)")
+Rel(connect_m, hadoop, "Сохраняет данные (hdfs-sink-connector)")
+
+Rel(registry, cluster, "хранит схемы")
+
+Rel(shop_app, registry, "", "", $tags="schema")
+Rel(client_app, registry, "", "", $tags="schema")
+Rel(filtering_app, registry, "", "", $tags="schema")
+Rel(connect, registry, "","",  $tags="schema")
+Rel(connect_m, registry, "", "", $tags="schema")
+Rel(ksqldb, registry, "", "", $tags="schema")
+
+Rel(jmx, kafka_1, "", "", $tags="metrics")
+Rel(jmx, kafka_2, "", "", $tags="metrics")
+Rel(jmx, kafka_3, "", "", $tags="metrics")
+Rel(jmx, kafka_m_1, "", "", $tags="metrics")
+Rel(jmx, kafka_m_2, "", "", $tags="metrics")
+Rel(jmx, kafka_m_3, "", "", $tags="metrics")
+Rel(jmx, prometheus, "сохраняет метрики", "", $tags="metrics")
+
+Rel(prometheus, alertamanager, "отправляет алерт")
+Rel(grafana, prometheus, "отображает метрики")
+Rel(alertamanager, telegram, "отправляет алерт")
+
+
+Rel(analytics, hadoop, "изучают данных")
+
+SHOW_LEGEND()
+@enduml
